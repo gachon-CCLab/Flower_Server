@@ -103,23 +103,6 @@ def model_download():
         print(f'gl_model: {model_X}, gl_model_v: {gl_model_v}')
         return model_X, gl_model_v
 
-    
-def model_build(model):
-    METRICS = [
-        tf.keras.metrics.BinaryAccuracy(name='accuracy'),
-        tf.keras.metrics.Precision(name='precision'),
-        tf.keras.metrics.Recall(name='recall'),
-        tf.keras.metrics.AUC(name='auc'),
-        tfa.metrics.F1Score(name='f1_score', num_classes=5, average='micro'),
-        tf.keras.metrics.AUC(name='auprc', curve='PR'), # precision-recall curve
-        ]
-
-    model.compile(
-        optimizer=tf.keras.optimizers.Adam(learning_rate=1e-3),
-        loss=tf.keras.losses.BinaryCrossentropy(),
-        metrics=METRICS)
-
-    return model
 
 def fl_server_start(model):
 
@@ -132,7 +115,7 @@ def fl_server_start(model):
         tf.keras.metrics.Precision(name='precision'),
         tf.keras.metrics.Recall(name='recall'),
         tf.keras.metrics.AUC(name='auc'),
-        tfa.metrics.F1Score(name='f1_score', num_classes=5, average='micro'),
+        tfa.metrics.F1Score(name='f1_score', num_classes=4, average='micro'),
         tf.keras.metrics.AUC(name='auprc', curve='PR'), # precision-recall curve
         ]
 
@@ -161,12 +144,11 @@ def fl_server_start(model):
 def main() -> None:
 
     global num_rounds, latest_gl_model_v
+    global x_val, y_val # f1_score 계산을 위해 label 개수 확인
 
     print('')
     print('latest_gl_model_v', latest_gl_model_v)
     print('')
-
-    global x_val, y_val # f1_score 계산을 위해 label 개수 확인
     
     if os.path.isfile('/app/gl_model_%s_V.h5'%latest_gl_model_v):
         print('load model')
@@ -314,12 +296,6 @@ if __name__ == "__main__":
 
     # y(label) one-hot encoding
     y_val = to_categorical(np.array(y_val))
-    
-    # s3에서 latest global model 가져오기
-    # if latest_gl_model_v > 0:
-    #     print('model downloading')
-    #     model_download()
-    #     print('model downloaded')
 
     try:
         # Flower Server 실행
