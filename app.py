@@ -100,7 +100,7 @@ def model_download():
 
         model_X = 'null'
         gl_model_v = 0
-        print(f'gl_model: {gl_model}, gl_model_v: {gl_model_v}')
+        print(f'gl_model: {model_X}, gl_model_v: {gl_model_v}')
         return model_X, gl_model_v
 
     
