@@ -3,6 +3,7 @@
 from typing import Dict,Optional, Tuple
 
 import flwr as fl
+from sqlalchemy import null
 import tensorflow as tf
 import tensorflow_addons as tfa
 
@@ -44,7 +45,7 @@ def upload_model_to_bucket(global_model):
     s3_resource = session.resource('s3')
     bucket = s3_resource.Bucket(bucket_name)
     bucket.upload_file(
-        Filename=f'/app/model_V{next_gl_model}.h5',
+        Filename=f'/app/gl_model_{next_gl_model}_V.h5',
         Key=global_model,
     )
     
@@ -71,18 +72,16 @@ def model_download():
         key = content['Key']
         file_list.append(key)
     
-    # model = s3_resource.download_file(bucket_name,'model_V%s.h5'%latest_gl_model_v, '/model/model_V%s.h5'%latest_gl_model_v)
-    # logging.info(f's3_uploaded_model: {file_list[0]}')
-
-    if 'model_V%s.h5'%latest_gl_model_v in file_list:
-       model = s3_resource.download_file(bucket_name, f'model_V{latest_gl_model_v}.h5', '/app/model_V%s.h5'%latest_gl_model_v)
-       print(f'model_download_path: /app/model_V{latest_gl_model_v}.h5')
-       return model
-
+    if file_list == null:
+        model_X = 'null'
+        gl_model_v = 0
+        return model_X, gl_model_v
     else:
-       pass
+        gl_model = file_list[len(file_list)-1]
+        gl_model_v = file_list[len(file_list)-1].split('_')[2]
+        return gl_model, gl_model_v
     
-
+    
 def model_build(model):
     METRICS = [
         tf.keras.metrics.BinaryAccuracy(name='accuracy'),
@@ -147,9 +146,9 @@ def main() -> None:
 
     global x_val, y_val # f1_score 계산을 위해 label 개수 확인
     
-    if os.path.isfile('/app/model_V%s.h5'%latest_gl_model_v):
+    if os.path.isfile('/app/gl_model_%s_V.h5'%latest_gl_model_v):
         print('load model')
-        model = tf.keras.models.load_model('/app/model_V%s.h5'%latest_gl_model_v)
+        model = tf.keras.models.load_model('/app/gl_model_%s_V.h5'%latest_gl_model_v)
         fl_server_start(model)
 
     else:
@@ -189,7 +188,7 @@ def get_eval_fn(model):
         global next_gl_model
 
         # model save
-        model.save("/app/model_V%s.h5"%next_gl_model)
+        model.save("/app/gl_model_%s_V.h5'%latest_gl_model_v")
 
         # wandb에 log upload
         # wandb.log({'loss':loss,"accuracy": accuracy, "precision": precision, "recall": recall, "auc": auc})
@@ -246,12 +245,15 @@ if __name__ == "__main__":
     today= datetime.today()
     today_time = today.strftime('%Y-%m-%d %H-%M-%S')
 
+    # global model download
+    model, latest_gl_model_v = model_download()
+
     # server_status 주소
     inform_SE: str = 'http://0.0.0.0:8000/FLSe/'
 
     # server_status 확인 => 전 global model 버전
-    server_res = requests.get(inform_SE + 'info')
-    latest_gl_model_v = int(server_res.json()['Server_Status']['GL_Model_V'])
+    # server_res = requests.get(inform_SE + 'info')
+    # latest_gl_model_v = int(server_res.json()['Server_Status']['GL_Model_V'])
     
     # 다음 global model 버전
     next_gl_model = latest_gl_model_v + 1
@@ -285,17 +287,17 @@ if __name__ == "__main__":
     y_val = to_categorical(np.array(y_val))
     
     # s3에서 latest global model 가져오기
-    if latest_gl_model_v > 0:
-        print('model downloading')
-        model_download()
-        print('model downloaded')
+    # if latest_gl_model_v > 0:
+    #     print('model downloading')
+    #     model_download()
+    #     print('model downloaded')
 
     try:
         # Flower Server 실행
         main()
 
         # s3 버킷에 global model upload
-        upload_model_to_bucket("model_V%s.h5" %next_gl_model)
+        upload_model_to_bucket("gl_model_%s_V.h5" %next_gl_model)
 
         # server_status error
     except Exception as e:
