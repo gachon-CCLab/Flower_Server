@@ -104,7 +104,7 @@ def model_download():
         return model_X, gl_model_v
 
 
-def fl_server_start(model):
+def fl_server_start(model, y_val):
 
     # Load and compile model for
     # 1. server-side parameter initialization
@@ -115,7 +115,7 @@ def fl_server_start(model):
         tf.keras.metrics.Precision(name='precision'),
         tf.keras.metrics.Recall(name='recall'),
         tf.keras.metrics.AUC(name='auc'),
-        tfa.metrics.F1Score(name='f1_score', num_classes=4, average='micro'),
+        tfa.metrics.F1Score(name='f1_score', num_classes=len(y_val[0]), average='micro'),
         tf.keras.metrics.AUC(name='auprc', curve='PR'), # precision-recall curve
         ]
 
@@ -153,7 +153,7 @@ def main() -> None:
     if os.path.isfile('/app/gl_model_%s_V.h5'%latest_gl_model_v):
         print('load model')
         model = tf.keras.models.load_model('/app/gl_model_%s_V.h5'%latest_gl_model_v)
-        fl_server_start(model)
+        fl_server_start(model, y_val)
 
     else:
         # global model 없을 시 초기 글로벌 모델 생성
