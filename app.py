@@ -56,26 +56,19 @@ def model_download():
     print('bucket_name: ', bucket_name)
     global latest_gl_model_v, next_gl_model
     
-    session = aws_session()
-    s3_resource = session.client('s3')
-    bucket_list = s3_resource.list_objects(Bucket=bucket_name)
-    content_list = bucket_list['Contents']
+    try:
+        session = aws_session()
+        s3_resource = session.client('s3')
+        bucket_list = s3_resource.list_objects(Bucket=bucket_name)
+        content_list = bucket_list['Contents']
 
-    # s3 bucket 내 global model 파일 조회
-    file_list=[]
+        # s3 bucket 내 global model 파일 조회
+        file_list=[]
 
-    for content in content_list:
-        key = content['Key']
-        file_list.append(key)
-    
-    # gl_model이 없으면
-    if file_list == 0:
-        print('model 없음')
-        model_X = 'null'
-        gl_model_v = 0
-        print(f'gl_model: {gl_model}, gl_model_v: {gl_model_v}')
-        return model_X, gl_model_v
-    else:
+        for content in content_list:
+            key = content['Key']
+            file_list.append(key)
+
         print('model 있음')
         gl_model = file_list[len(file_list)-1]
         gl_model_v = int(file_list[len(file_list)-1].split('_')[2])
@@ -84,7 +77,32 @@ def model_download():
         s3_resource.download_file(bucket_name, f'gl_model_{gl_model_v}_V.h5', f'/app/gl_model_{gl_model_v}_V.h5')
 
         return gl_model, gl_model_v
+        
+        # # gl_model이 없으면
+        # if file_list == 0:
+        #     print('model 없음')
+        #     model_X = 'null'
+        #     gl_model_v = 0
+        #     print(f'gl_model: {gl_model}, gl_model_v: {gl_model_v}')
+        #     return model_X, gl_model_v
+        # else:
+        #     print('model 있음')
+        #     gl_model = file_list[len(file_list)-1]
+        #     gl_model_v = int(file_list[len(file_list)-1].split('_')[2])
+        #     print(f'gl_model: {gl_model}, gl_model_v: {gl_model_v}')
+
+        #     s3_resource.download_file(bucket_name, f'gl_model_{gl_model_v}_V.h5', f'/app/gl_model_{gl_model_v}_V.h5')
+
+        #     return gl_model, gl_model_v
     
+    except Exception as e:
+        print('error: ', e)
+
+        model_X = 'null'
+        gl_model_v = 0
+        print(f'gl_model: {gl_model}, gl_model_v: {gl_model_v}')
+        return model_X, gl_model_v
+
     
 def model_build(model):
     METRICS = [
