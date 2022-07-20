@@ -64,14 +64,14 @@ def model_download():
     content_list = bucket_list['Contents']
 
     # s3 bucket 내 global model 파일 조회
-    # 00시에 처음 FL 학습 돌린 모델은 전날에 수행한 global 모델 사용
     file_list=[]
 
     for content in content_list:
         key = content['Key']
         file_list.append(key)
     
-    if file_list == null:
+    # gl_model이 없으면
+    if file_list == 0:
         model_X = 'null'
         gl_model_v = 0
         return model_X, gl_model_v
