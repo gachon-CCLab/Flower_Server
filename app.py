@@ -79,24 +79,8 @@ def model_download():
         s3_resource.download_file(bucket_name, f'gl_model_{gl_model_v}_V.h5', f'/app/gl_model_{gl_model_v}_V.h5')
 
         return gl_model, gl_model_v
-        
-        # # gl_model이 없으면
-        # if file_list == 0:
-        #     print('model 없음')
-        #     model_X = 'null'
-        #     gl_model_v = 0
-        #     print(f'gl_model: {gl_model}, gl_model_v: {gl_model_v}')
-        #     return model_X, gl_model_v
-        # else:
-        #     print('model 있음')
-        #     gl_model = file_list[len(file_list)-1]
-        #     gl_model_v = int(file_list[len(file_list)-1].split('_')[2])
-        #     print(f'gl_model: {gl_model}, gl_model_v: {gl_model_v}')
 
-        #     s3_resource.download_file(bucket_name, f'gl_model_{gl_model_v}_V.h5', f'/app/gl_model_{gl_model_v}_V.h5')
-
-        #     return gl_model, gl_model_v
-    
+    # s3에 global model 없을 경우
     except Exception as e:
         print('error: ', e)
 
@@ -129,10 +113,10 @@ def fl_server_start(model, y_val):
     # Create strategy
     strategy = fl.server.strategy.FedAvg(
         # fraction_fit > fraction_eval이여야 함
-        fraction_fit=0.5, # 클라이언트 학습 참여 비율
-        fraction_eval=0.4, # 클라이언트 평가 참여 비율
-        min_fit_clients=4, # 최소 학습 참여 수
-        min_eval_clients=4, # 최소 평가 참여 수
+        fraction_fit=0.6, # 클라이언트 학습 참여 비율
+        fraction_eval=0.5, # 클라이언트 평가 참여 비율
+        min_fit_clients=10, # 최소 학습 참여 수
+        min_eval_clients=10, # 최소 평가 참여 수
         min_available_clients=4, # 클라이언트 연결 필요 수
         eval_fn=get_eval_fn(model), # 모델 평가 결과
         on_fit_config_fn=fit_config, # batchsize, epoch 수
