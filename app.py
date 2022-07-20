@@ -283,7 +283,7 @@ if __name__ == "__main__":
     
     # wandb login and init
     wandb.login(key=os.environ.get('WB_KEY'))
-    wandb.init(entity='ccl-fl', project='NEWS_Server_high_parameter', name= 'server_V%s'%next_gl_model, dir='/',  \
+    wandb.init(entity='ccl-fl', project='fl-server', name= 'server_V%s'%next_gl_model, dir='/',  \
         config={"num_rounds": num_rounds,"local_epochs": local_epochs, "batch_size": batch_size,"val_steps": val_steps, "today_datetime": today_time,
         "Model_V": next_gl_model})
     
