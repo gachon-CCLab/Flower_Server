@@ -18,9 +18,7 @@ import os
 import boto3
 
 import requests, json
-
-from dotenv import load_dotenv
-load_dotenv(verbose=True)
+import time
 
 # FL 하이퍼파라미터 설정
 num_rounds = 1
@@ -82,6 +80,9 @@ def model_download():
         gl_model = file_list[len(file_list)-1]
         gl_model_v = int(file_list[len(file_list)-1].split('_')[2])
         print(f'gl_model: {gl_model}, gl_model_v: {gl_model_v}')
+
+        s3_resource.download_file(bucket_name, f'gl_model_{latest_gl_model_v}_V.h5', '/app/gl_model_{latest_gl_model_v}_V.h5')
+
         return gl_model, gl_model_v
     
     
@@ -269,8 +270,14 @@ if __name__ == "__main__":
             'GL_Model_V' : latest_gl_model_v # GL 모델 버전
         }
 
-    # server_status => FL server ready
-    requests.put(inform_SE+'FLSeUpdate', data=json.dumps(inform_Payload))
+    while True:
+        # server_status => FL server ready
+        r = requests.put(inform_SE+'FLSeUpdate', data=json.dumps(inform_Payload))
+        if r.status_code == 200:
+            break
+        else:
+            print(r.content)
+        time.sleep(5)
     
     # wandb login and init
     wandb.login(key=os.environ.get('WB_KEY'))
