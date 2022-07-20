@@ -210,7 +210,7 @@ def get_eval_fn(model):
         global next_gl_model
 
         # model save
-        model.save("/app/gl_model_%s_V.h5'%latest_gl_model_v")
+        model.save("/app/gl_model_%s_V.h5"%latest_gl_model_v)
 
         # wandb에 log upload        
         wandb.log({'loss':loss,"accuracy": accuracy, "precision": precision, "recall": recall, "auc": auc, "auprc": auprc, "f1_score": f1_score})
