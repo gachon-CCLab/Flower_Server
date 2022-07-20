@@ -289,13 +289,20 @@ if __name__ == "__main__":
         }
 
     while True:
-        # server_status => FL server ready
-        r = requests.put(inform_SE+'FLSeUpdate', data=json.dumps(inform_Payload))
-        if r.status_code == 200:
-            break
-        else:
-            print(r.content)
-        time.sleep(5)
+        try:
+            # server_status => FL server ready
+            r = requests.put(inform_SE+'FLSeUpdate', verify=False, data=json.dumps(inform_Payload))
+            if r.status_code == 200:
+                break
+            else:
+                print(r.content)
+        except:
+            print("Connection refused by the server..")
+            print("Let me sleep for 5 seconds")
+            print("ZZzzzz...")
+            time.sleep(5)
+            print("Was a nice sleep, now let me continue...")
+            continue
     
     # wandb login and init
     wandb.login(key=os.environ.get('WB_KEY'))
