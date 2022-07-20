@@ -156,7 +156,7 @@ def fl_server_start(model):
     )
 
     # Start Flower server for four rounds of federated learning
-    fl.server.start_server("[::]:8080", config={"num_rounds": num_rounds}, strategy=strategy)
+    fl.server.start_server("0.0.0.0:8080", config={"num_rounds": num_rounds}, strategy=strategy)
 
 def main() -> None:
 
@@ -212,16 +212,11 @@ def get_eval_fn(model):
         # model save
         model.save("/app/gl_model_%s_V.h5'%latest_gl_model_v")
 
-        # wandb에 log upload
-        # wandb.log({'loss':loss,"accuracy": accuracy, "precision": precision, "recall": recall, "auc": auc})
-        
+        # wandb에 log upload        
         wandb.log({'loss':loss,"accuracy": accuracy, "precision": precision, "recall": recall, "auc": auc, "auprc": auprc, "f1_score": f1_score})
 
         
         return loss, {"accuracy": accuracy, "precision": precision, "recall": recall, "auc": auc, "auprc": auprc, "f1_score":f1_score}
-
-        # loss, accuracy, precision, recall, auc, f1_score, auprc = model.evaluate(x_val, y_val)
-        # return loss, {"accuracy": accuracy, "precision": precision, "recall": recall, "auc": auc, "f1_score": f1_score, "auprc": auprc}
 
     return evaluate
 
@@ -242,7 +237,7 @@ def fit_config(rnd: int):
     }
 
     # wandb log upload
-    # wandb.config.update({"local_epochs": local_epochs, "batch_size": batch_size},allow_val_change=True)
+    wandb.config.update({"local_epochs": local_epochs, "batch_size": batch_size},allow_val_change=True)
 
     return config
 
