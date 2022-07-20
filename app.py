@@ -271,7 +271,7 @@ if __name__ == "__main__":
     model, latest_gl_model_v = model_download()
 
     # server_status 주소
-    inform_SE: str = 'http://0.0.0.0:8000/FLSe/'
+    inform_SE: str = 'http://10.152.183.18:8000/FLSe/'
 
     # server_status 확인 => 전 global model 버전
     # server_res = requests.get(inform_SE + 'info')
