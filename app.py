@@ -38,6 +38,8 @@ def upload_model_to_bucket(global_model):
     bucket_name = os.environ.get('BUCKET_NAME')
     global latest_gl_model_v, next_gl_model
     
+    print(f'gl_model_{next_gl_model}_V.h5 모델 업로드 시작')
+
     session = aws_session()
     s3_resource = session.resource('s3')
     bucket = s3_resource.Bucket(bucket_name)
@@ -47,7 +49,7 @@ def upload_model_to_bucket(global_model):
     )
     
     s3_url = f"https://{bucket_name}.s3.amazonaws.com/{global_model}"
-
+    print(f'gl_model_{next_gl_model}_V.h5 모델 업로드 완료')
     return s3_url
 
 # s3에 저장되어 있는 latest global model download
@@ -304,6 +306,7 @@ if __name__ == "__main__":
         # s3 버킷에 global model upload
         upload_model_to_bucket("gl_model_%s_V.h5" %next_gl_model)
 
+        
         # server_status error
     except Exception as e:
         print('error: ', e)
