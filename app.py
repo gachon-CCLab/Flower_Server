@@ -81,7 +81,7 @@ def model_download():
         gl_model_v = int(file_list[len(file_list)-1].split('_')[2])
         print(f'gl_model: {gl_model}, gl_model_v: {gl_model_v}')
 
-        s3_resource.download_file(bucket_name, f'gl_model_{latest_gl_model_v}_V.h5', '/app/gl_model_{latest_gl_model_v}_V.h5')
+        s3_resource.download_file(bucket_name, f'gl_model_{gl_model_v}_V.h5', f'/app/gl_model_{gl_model_v}_V.h5')
 
         return gl_model, gl_model_v
     
