@@ -72,12 +72,16 @@ def model_download():
     
     # gl_model이 없으면
     if file_list == 0:
+        print('model 없음')
         model_X = 'null'
         gl_model_v = 0
+        print(f'gl_model: {gl_model}, gl_model_v: {gl_model_v}')
         return model_X, gl_model_v
     else:
+        print('model 있음')
         gl_model = file_list[len(file_list)-1]
-        gl_model_v = file_list[len(file_list)-1].split('_')[2]
+        gl_model_v = int(file_list[len(file_list)-1].split('_')[2])
+        print(f'gl_model: {gl_model}, gl_model_v: {gl_model_v}')
         return gl_model, gl_model_v
     
     
@@ -254,7 +258,6 @@ if __name__ == "__main__":
     # server_res = requests.get(inform_SE + 'info')
     # latest_gl_model_v = int(server_res.json()['Server_Status']['GL_Model_V'])
     
-    # 다음 global model 버전
     next_gl_model = latest_gl_model_v + 1
 
     inform_Payload = {
