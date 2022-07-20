@@ -170,7 +170,7 @@ def main() -> None:
             tf.keras.layers.Dense(len(y_val[0]), activation='sigmoid'),
         ])
 
-        fl_server_start(model)
+        fl_server_start(model, y_val)
         
 
 def get_eval_fn(model):
