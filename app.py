@@ -73,6 +73,7 @@ def model_download():
 
         print('model 있음')
         gl_model = file_list[len(file_list)-1]
+        print('gl_model: ', gl_model)
         gl_model_v = int(file_list[len(file_list)-1].split('_')[2])
         print(f'gl_model: {gl_model}, gl_model_v: {gl_model_v}')
 
