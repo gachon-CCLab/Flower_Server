@@ -21,8 +21,8 @@ import requests, json
 import time
 
 # FL 하이퍼파라미터 설정
-num_rounds = 50
-local_epochs = 10
+num_rounds = 10
+local_epochs = 50
 batch_size = 32
 val_steps = 5
 
@@ -288,7 +288,7 @@ if __name__ == "__main__":
         # Flower Server 실행
         main()
         end_time = time.time()
-        excution_time = start_time - end_time
+        excution_time = end_time - start_time
         print('excution_time: ', excution_time)
         # s3 버킷에 global model upload
         upload_model_to_bucket("gl_model_%s_V.h5" %next_gl_model)
