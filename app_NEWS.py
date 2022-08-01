@@ -6,8 +6,6 @@ import flwr as fl
 import tensorflow as tf
 import tensorflow_addons as tfa
 
-from keras.models import Sequential
-from keras.layers import Conv2D, MaxPool2D, Dropout, Flatten, Dense
 from keras.utils.np_utils import to_categorical
 
 import numpy as np
@@ -23,9 +21,9 @@ import requests, json
 import time
 
 # FL 하이퍼파라미터 설정
-num_rounds = 2
-local_epochs = 2
-batch_size = 2048
+num_rounds = 10
+local_epochs = 50
+batch_size = 32
 val_steps = 5
 
 # 참고: https://loosie.tistory.com/210, https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/s3.html
@@ -75,14 +73,22 @@ def model_download():
 
         print('model 있음')
         print('model_file_list: ', file_list)
-        gl_model = file_list[len(file_list)-1]
-        print('gl_model: ', gl_model)
-        gl_model_v = int(file_list[len(file_list)-1].split('_')[2])
-        print(f'gl_model: {gl_model}, gl_model_v: {gl_model_v}')
 
-        s3_resource.download_file(bucket_name, f'gl_model_{gl_model_v}_V.h5', f'/app/gl_model_{gl_model_v}_V.h5')
+        # global model 버전 담을 리스트
+        gl_v_list = []
+        for i in file_list:
+            gl_v = i.split('_')[2]
+            gl_v_list.append(int(gl_v))
+        
+        gl_v_max = max(gl_v_list) # gl 버전 max 추출
+        gl_v_max_index = gl_v_list.index(gl_v_max) # max index 추출
+        
+        gl_model = file_list[gl_v_max_index]
+        
+        # s3에서 gl model 최신 버전 다운로드
+        s3_resource.download_file(bucket_name, f'gl_model_{gl_v_max}_V.h5', f'/app/gl_model_{gl_v_max}_V.h5')
 
-        return gl_model, gl_model_v
+        return gl_model, gl_v_max
 
     # s3에 global model 없을 경우
     except Exception as e:
@@ -109,8 +115,10 @@ def fl_server_start(model, y_val):
         tf.keras.metrics.AUC(name='auprc', curve='PR'), # precision-recall curve
         ]
 
-    model.compile(loss='categorical_crossentropy', optimizer=tf.keras.optimizers.Adam(lr=0.001), metrics=METRICS)
-
+    model.compile(
+        optimizer=tf.keras.optimizers.Adam(learning_rate=1e-3),
+        loss=tf.keras.losses.BinaryCrossentropy(),
+        metrics=METRICS)
 
     # Create strategy
     strategy = fl.server.strategy.FedAvg(
@@ -147,26 +155,16 @@ def gl_model_load():
         # global model 없을 시 초기 글로벌 모델 생성
         print('basic model making')
 
-        # model 생성
-        model = Sequential()
+        print('initial_model x_val length: ', x_val.shape[-1])
+        print()
 
-        # Convolutional Block (Conv-Conv-Pool-Dropout)
-        model.add(Conv2D(32, (3, 3), activation='relu', padding='same', input_shape=(32, 32, 3)))
-        model.add(Conv2D(32, (3, 3), activation='relu', padding='same'))
-        model.add(MaxPool2D(pool_size=(2, 2)))
-        model.add(Dropout(0.25))
-
-        # Convolutional Block (Conv-Conv-Pool-Dropout)
-        model.add(Conv2D(64, (3, 3), activation='relu', padding='same'))
-        model.add(Conv2D(64, (3, 3), activation='relu', padding='same'))
-        model.add(MaxPool2D(pool_size=(2, 2)))
-        model.add(Dropout(0.25))
-
-        # Classifying
-        model.add(Flatten())
-        model.add(Dense(512, activation='relu'))
-        model.add(Dropout(0.5))
-        model.add(Dense(10, activation='softmax'))
+        model = tf.keras.Sequential([
+            tf.keras.layers.Dense(
+                16, activation='relu',
+                input_shape=(x_val.shape[-1],)), # input_shape에 x_val.shape[-1] 값을 넣으면 오류남 input_shape을 6으로 인식
+                # input_shape=(5,)),
+            tf.keras.layers.Dense(len(y_val[0]), activation='sigmoid'),
+        ])
 
         fl_server_start(model, y_val)
         
@@ -276,21 +274,19 @@ if __name__ == "__main__":
     
     # wandb login and init
     wandb.login(key='6266dbc809b57000d78fb8b163179a0a3d6eeb37')
-    wandb.init(entity='ccl-fl', project='fl-server', name= 'server_V%s'%next_gl_model, dir='/',  \
+    wandb.init(entity='ccl-fl', project='fl-server-r10', name= 'server_V%s'%next_gl_model, dir='/',  \
         config={"num_rounds": num_rounds,"local_epochs": local_epochs, "batch_size": batch_size,"val_steps": val_steps, "today_datetime": today_time,
         "Model_V": next_gl_model})
     
     
-    # Cifar 10 데이터셋 불러오기
-    (X_train, y_train), (X_test, y_test) = tf.keras.datasets.cifar10.load_data()
-        
-    num_classes = 10	
+    # global model 평가를 위한 dataset 
+    df, p_list = dataset.data_load()
 
-    # global model 평가를 위한 데이터셋
-    x_val, y_val = X_test[1000:9000], y_test[1000:9000]
+    # Use the last 5k training examples as a validation set
+    x_val, y_val = df.iloc[:10000,1:6], df.loc[:9999,'label']
 
     # y(label) one-hot encoding
-    y_val = to_categorical(y_val, num_classes)
+    y_val = to_categorical(np.array(y_val))
 
     try:
         start_time = time.time()
