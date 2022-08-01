@@ -21,9 +21,9 @@ import requests, json
 import time
 
 # FL 하이퍼파라미터 설정
-num_rounds = 10
-local_epochs = 50
-batch_size = 32
+num_rounds = 2
+local_epochs = 2
+batch_size = 2048
 val_steps = 5
 
 # 참고: https://loosie.tistory.com/210, https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/s3.html
@@ -151,12 +151,12 @@ def gl_model_load():
         print()
 
         model = tf.keras.Sequential([
-            tf.keras.layers.Dense(
+            tf.keras.layers.Conv2D(
                 64, 3, 3, 
-                        activation='relu',
-                        input_shape=(x_val.shape[1],x_val.shape[2], x_val.shape[-1])),
+                activation='relu',
+                input_shape=(x_val.shape[1],x_val.shape[2], x_val.shape[-1])),
             tf.keras.layers.Dropout(0.5),
-            tf.keras.layers.Dense(len(y_val[0]), activation='sigmoid'),
+            tf.keras.layers.Dense(len(y_val[0]), activation='softmax'),
         ])
 
         fl_server_start(model, y_val)
@@ -281,7 +281,7 @@ if __name__ == "__main__":
     x_val, y_val = X_test[1000:9000], y_test[1000:9000]
 
     # y(label) one-hot encoding
-    y_val = to_categorical(np.array(y_val), num_classes)
+    y_val = to_categorical(y_val, num_classes)
 
     try:
         start_time = time.time()
