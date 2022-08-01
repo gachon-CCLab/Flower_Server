@@ -108,8 +108,8 @@ def fl_server_start(model, y_val):
         ]
 
     model.compile(
-        optimizer=tf.keras.optimizers.Adam(learning_rate=1e-3),
-        loss=tf.keras.losses.BinaryCrossentropy(),
+        loss='categorical_crossentropy',
+        optimizer='sgd',
         metrics=METRICS)
 
     # Create strategy
@@ -152,9 +152,10 @@ def gl_model_load():
 
         model = tf.keras.Sequential([
             tf.keras.layers.Dense(
-                16, activation='relu',
-                input_shape=(x_val.shape[-1],)), # input_shape에 x_val.shape[-1] 값을 넣으면 오류남 input_shape을 6으로 인식
-                # input_shape=(5,)),
+                64, 3, 3, 
+                        activation='relu',
+                        input_shape=(x_val.shape[1],x_val.shape[2], x_val.shape[-1])),
+            tf.keras.layers.Dropout(0.5),
             tf.keras.layers.Dense(len(y_val[0]), activation='sigmoid'),
         ])
 
