@@ -8,7 +8,6 @@ import tensorflow_addons as tfa
 
 from keras.models import Sequential
 from keras.layers import Conv2D, MaxPool2D, Dropout, Flatten, Dense
-from keras.optimizers import Adam
 from keras.utils.np_utils import to_categorical
 
 import numpy as np
@@ -110,7 +109,7 @@ def fl_server_start(model, y_val):
         tf.keras.metrics.AUC(name='auprc', curve='PR'), # precision-recall curve
         ]
 
-    model.compile(loss='categorical_crossentropy', optimizer=Adam(lr=0.001), metrics=METRICS)
+    model.compile(loss='categorical_crossentropy', optimizer=tf.keras.optimizers.Adam(lr=0.001), metrics=METRICS)
 
 
     # Create strategy
