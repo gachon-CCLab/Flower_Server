@@ -73,14 +73,22 @@ def model_download():
 
         print('model 있음')
         print('model_file_list: ', file_list)
-        gl_model = file_list[len(file_list)-1]
-        print('gl_model: ', gl_model)
-        gl_model_v = int(file_list[len(file_list)-1].split('_')[2])
-        print(f'gl_model: {gl_model}, gl_model_v: {gl_model_v}')
 
-        s3_resource.download_file(bucket_name, f'gl_model_{gl_model_v}_V.h5', f'/app/gl_model_{gl_model_v}_V.h5')
+        # global model 버전 담을 리스트
+        gl_v_list = []
+        for i in file_list:
+            gl_v = i.split('_')[2]
+            gl_v_list.append(int(gl_v))
+        
+        gl_v_max = max(gl_v_list) # gl 버전 max 추출
+        gl_v_max_index = gl_v_list.index(gl_v_max) # max index 추출
+        
+        gl_model = file_list[gl_v_max_index]
+        
+        # s3에서 gl model 최신 버전 다운로드
+        s3_resource.download_file(bucket_name, f'gl_model_{gl_v_max}_V.h5', f'/app/gl_model_{gl_v_max}_V.h5')
 
-        return gl_model, gl_model_v
+        return gl_model, gl_v_max
 
     # s3에 global model 없을 경우
     except Exception as e:
@@ -266,21 +274,19 @@ if __name__ == "__main__":
     
     # wandb login and init
     wandb.login(key='6266dbc809b57000d78fb8b163179a0a3d6eeb37')
-    wandb.init(entity='ccl-fl', project='fl-server', name= 'server_V%s'%next_gl_model, dir='/',  \
+    wandb.init(entity='ccl-fl', project='fl-server-r10', name= 'server_V%s'%next_gl_model, dir='/',  \
         config={"num_rounds": num_rounds,"local_epochs": local_epochs, "batch_size": batch_size,"val_steps": val_steps, "today_datetime": today_time,
         "Model_V": next_gl_model})
     
     
-    # Cifar 10 데이터셋 불러오기
-    (X_train, y_train), (X_test, y_test) = tf.keras.datasets.cifar10.load_data()
-        
-    num_classes = 10	
+    # global model 평가를 위한 dataset 
+    df, p_list = dataset.data_load()
 
-    # global model 평가를 위한 데이터셋
-    x_val, y_val = X_test[1000:9000], y_test[1000:9000]
+    # Use the last 5k training examples as a validation set
+    x_val, y_val = df.iloc[:10000,1:6], df.loc[:9999,'label']
 
     # y(label) one-hot encoding
-    y_val = to_categorical(np.array(y_val), num_classes)
+    y_val = to_categorical(np.array(y_val))
 
     try:
         start_time = time.time()
