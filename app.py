@@ -6,6 +6,9 @@ import flwr as fl
 import tensorflow as tf
 import tensorflow_addons as tfa
 
+from keras.models import Sequential
+from keras.layers import Conv2D, MaxPool2D, Dropout, Flatten, Dense
+from keras.optimizers import Adam
 from keras.utils.np_utils import to_categorical
 
 import numpy as np
@@ -107,10 +110,8 @@ def fl_server_start(model, y_val):
         tf.keras.metrics.AUC(name='auprc', curve='PR'), # precision-recall curve
         ]
 
-    model.compile(
-        loss='categorical_crossentropy',
-        optimizer='sgd',
-        metrics=METRICS)
+    model.compile(loss='categorical_crossentropy', optimizer=Adam(lr=0.001), metrics=METRICS)
+
 
     # Create strategy
     strategy = fl.server.strategy.FedAvg(
@@ -147,17 +148,26 @@ def gl_model_load():
         # global model 없을 시 초기 글로벌 모델 생성
         print('basic model making')
 
-        print('initial_model x_val length: ', x_val.shape[-1])
-        print()
+        # model 생성
+        model = Sequential()
 
-        model = tf.keras.Sequential([
-            tf.keras.layers.Conv2D(
-                64, 3, 3, 
-                activation='relu',
-                input_shape=(x_val.shape[1],x_val.shape[2], x_val.shape[-1])),
-            tf.keras.layers.Dropout(0.5),
-            tf.keras.layers.Dense(len(y_val[0]), activation='softmax'),
-        ])
+        # Convolutional Block (Conv-Conv-Pool-Dropout)
+        model.add(Conv2D(32, (3, 3), activation='relu', padding='same', input_shape=(32, 32, 3)))
+        model.add(Conv2D(32, (3, 3), activation='relu', padding='same'))
+        model.add(MaxPool2D(pool_size=(2, 2)))
+        model.add(Dropout(0.25))
+
+        # Convolutional Block (Conv-Conv-Pool-Dropout)
+        model.add(Conv2D(64, (3, 3), activation='relu', padding='same'))
+        model.add(Conv2D(64, (3, 3), activation='relu', padding='same'))
+        model.add(MaxPool2D(pool_size=(2, 2)))
+        model.add(Dropout(0.25))
+
+        # Classifying
+        model.add(Flatten())
+        model.add(Dense(512, activation='relu'))
+        model.add(Dropout(0.5))
+        model.add(Dense(10, activation='softmax'))
 
         fl_server_start(model, y_val)
         
