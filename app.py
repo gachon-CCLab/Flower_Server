@@ -10,10 +10,6 @@ from keras.models import Sequential
 from keras.layers import Conv2D, MaxPool2D, Dropout, Flatten, Dense
 from keras.utils.np_utils import to_categorical
 
-import numpy as np
-
-import health_dataset as dataset
-
 import wandb
 from datetime import datetime
 import os
