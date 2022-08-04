@@ -111,6 +111,8 @@ def fl_server_start(model, y_val):
     # Create strategy
     strategy = fl.server.strategy.FedAvg(
         # fraction_fit > fraction_eval이여야 함
+        # min_available_clients의 수를 실제 연결 client 수 보다 작게 하는게 안정적임
+        # => client가 학습 중에 멈추는 현상이 가끔 발생
         fraction_fit=0.6, # 클라이언트 학습 참여 비율
         fraction_eval=0.5, # 클라이언트 평가 참여 비율
         min_fit_clients=4, # 최소 학습 참여 수
