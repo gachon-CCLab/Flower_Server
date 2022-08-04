@@ -23,8 +23,8 @@ import requests, json
 import time
 
 # FL 하이퍼파라미터 설정
-num_rounds = 2
-local_epochs = 2
+num_rounds = 10
+local_epochs = 5
 batch_size = 2048
 val_steps = 5
 
@@ -119,7 +119,7 @@ def fl_server_start(model, y_val):
         fraction_eval=0.5, # 클라이언트 평가 참여 비율
         min_fit_clients=5, # 최소 학습 참여 수
         min_eval_clients=5, # 최소 평가 참여 수
-        min_available_clients=4, # 최소 클라이언트 연결 필요 수
+        min_available_clients=3, # 최소 클라이언트 연결 필요 수
         eval_fn=get_eval_fn(model), # 모델 평가 결과
         on_fit_config_fn=fit_config, # batchsize, epoch 수
         on_evaluate_config_fn=evaluate_config, # val_step
