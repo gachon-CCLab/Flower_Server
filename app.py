@@ -242,7 +242,7 @@ if __name__ == "__main__":
 
 
     # server_status 주소
-    inform_SE: str = 'http://10.152.183.18:8000/FLSe/'
+    inform_SE: str = 'http://10.152.183.248:8000/FLSe/'
 
     inform_Payload = {
             # 형식
