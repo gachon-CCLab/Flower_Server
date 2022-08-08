@@ -154,12 +154,6 @@ def gl_model_load():
         model.add(MaxPool2D(pool_size=(2, 2)))
         model.add(Dropout(0.25))
 
-        # Convolutional Block (Conv-Conv-Pool-Dropout)
-        model.add(Conv2D(64, (3, 3), activation='relu', padding='same'))
-        model.add(Conv2D(64, (3, 3), activation='relu', padding='same'))
-        model.add(MaxPool2D(pool_size=(2, 2)))
-        model.add(Dropout(0.25))
-
         # Classifying
         model.add(Flatten())
         model.add(Dense(512, activation='relu'))
