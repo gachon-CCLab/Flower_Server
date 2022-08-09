@@ -16,12 +16,6 @@ import boto3
 import requests, json
 import time
 
-# FL 하이퍼파라미터 설정
-num_rounds = 10
-local_epochs = 5
-batch_size = 2048
-val_steps = 5
-
 # 참고: https://loosie.tistory.com/210, https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/s3.html
 # aws session 연결
 def aws_session(region_name='ap-northeast-2'):
@@ -31,8 +25,8 @@ def aws_session(region_name='ap-northeast-2'):
 
 # s3에 global model upload
 def upload_model_to_bucket(global_model):
-    bucket_name = os.environ.get('BUCKET_NAME')
-    global latest_gl_model_v, next_gl_model
+   
+    global latest_gl_model_v, next_gl_model, bucket_name
     
     print(f'gl_model_{next_gl_model}_V.h5 모델 업로드 시작')
 
@@ -50,9 +44,9 @@ def upload_model_to_bucket(global_model):
 
 # s3에 저장되어 있는 latest global model download
 def model_download():
-    bucket_name = os.environ.get('BUCKET_NAME')
+    global latest_gl_model_v, next_gl_model, bucket_name
+
     print('bucket_name: ', bucket_name)
-    global latest_gl_model_v, next_gl_model
     
     try:
         session = aws_session()
@@ -229,6 +223,15 @@ def evaluate_config(rnd: int):
 
 if __name__ == "__main__":
     
+    # FL 하이퍼파라미터 설정
+    num_rounds = 4
+    local_epochs = 5
+    batch_size = 2048
+    val_steps = 5
+
+    # 글로벌 모델 저장소
+    bucket_name = os.environ.get('BUCKET_NAME')
+
     today= datetime.today()
     today_time = today.strftime('%Y-%m-%d %H-%M-%S')
 
