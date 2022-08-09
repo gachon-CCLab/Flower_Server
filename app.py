@@ -78,12 +78,13 @@ def model_download():
 
         s3_resource.download_file(bucket_name, f'gl_model_{gl_model_v}_V.h5', f'/app/gl_model_{gl_model_v}_V.h5')
 
+        print(f'{gl_model} 모델 가져옴')
+
         return gl_model, gl_model_v
 
     # s3에 global model 없을 경우
     except Exception as e:
         print('error: ', e)
-
         model_X = 'null'
         gl_model_v = 0
         print(f'gl_model: {model_X}, gl_model_v: {gl_model_v}')
