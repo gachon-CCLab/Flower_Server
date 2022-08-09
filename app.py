@@ -16,15 +16,6 @@ import boto3
 import requests, json
 import time
 
-# FL 하이퍼파라미터 설정
-num_rounds = 4
-local_epochs = 5
-batch_size = 2048
-val_steps = 5
-
-# 글로벌 모델 저장소
-bucket_name = os.environ.get('BUCKET_NAME')
-
 # 참고: https://loosie.tistory.com/210, https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/s3.html
 # aws session 연결
 def aws_session(region_name='ap-northeast-2'):
@@ -231,6 +222,15 @@ def evaluate_config(rnd: int):
 
 
 if __name__ == "__main__":
+    
+    # FL 하이퍼파라미터 설정
+    num_rounds = 4
+    local_epochs = 5
+    batch_size = 2048
+    val_steps = 5
+
+    # 글로벌 모델 저장소
+    bucket_name = os.environ.get('BUCKET_NAME')
 
     today= datetime.today()
     today_time = today.strftime('%Y-%m-%d %H-%M-%S')
