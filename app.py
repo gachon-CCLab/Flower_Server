@@ -247,7 +247,7 @@ if __name__ == "__main__":
 
     inform_Payload = {
             # 형식
-            'S3_bucket': 'fl-gl-model', # 버킷명
+            'S3_bucket': bucket_name, # 버킷명
             'S3_key': 'gl_model_%s_V.h5'%latest_gl_model_v,  # 모델 가중치 파일 이름
             'play_datetime': today_time, # server 수행 시간
             'FLSeReady': True, # server 준비 상태 on
