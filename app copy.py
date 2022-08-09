@@ -1,3 +1,5 @@
+# https://github.com/adap/flower/tree/main/examples/advanced_tensorflow 참조
+
 from typing import Dict,Optional, Tuple
 
 import flwr as fl
@@ -16,12 +18,6 @@ import boto3
 import requests, json
 import time
 
-# FL 하이퍼파라미터 설정
-num_rounds = 10
-local_epochs = 5
-batch_size = 2048
-val_steps = 5
-
 # 참고: https://loosie.tistory.com/210, https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/s3.html
 # aws session 연결
 def aws_session(region_name='ap-northeast-2'):
@@ -31,8 +27,8 @@ def aws_session(region_name='ap-northeast-2'):
 
 # s3에 global model upload
 def upload_model_to_bucket(global_model):
-    bucket_name = os.environ.get('BUCKET_NAME')
-    global latest_gl_model_v, next_gl_model
+    
+    global latest_gl_model_v, next_gl_model, bucket_name
     
     print(f'gl_model_{next_gl_model}_V.h5 모델 업로드 시작')
 
@@ -50,9 +46,8 @@ def upload_model_to_bucket(global_model):
 
 # s3에 저장되어 있는 latest global model download
 def model_download():
-    bucket_name = os.environ.get('BUCKET_NAME')
+    global latest_gl_model_v, next_gl_model, bucket_name
     print('bucket_name: ', bucket_name)
-    global latest_gl_model_v, next_gl_model
     
     try:
         session = aws_session()
@@ -76,12 +71,13 @@ def model_download():
 
         s3_resource.download_file(bucket_name, f'gl_model_{gl_model_v}_V.h5', f'/app/gl_model_{gl_model_v}_V.h5')
 
+        print(f'{gl_model} 모델 가져옴')
+
         return gl_model, gl_model_v
 
     # s3에 global model 없을 경우
     except Exception as e:
         print('error: ', e)
-
         model_X = 'null'
         gl_model_v = 0
         print(f'gl_model: {model_X}, gl_model_v: {gl_model_v}')
@@ -229,6 +225,15 @@ def evaluate_config(rnd: int):
 
 if __name__ == "__main__":
     
+    # FL 하이퍼파라미터 설정
+    num_rounds = 2
+    local_epochs = 3
+    batch_size = 2048
+    val_steps = 5
+
+    # global model 저장소
+    bucket_name = os.environ.get('BUCKET_NAME')
+
     today= datetime.today()
     today_time = today.strftime('%Y-%m-%d %H-%M-%S')
 
@@ -244,7 +249,7 @@ if __name__ == "__main__":
 
     inform_Payload = {
             # 형식
-            'S3_bucket': 'fl-gl-model', # 버킷명
+            'S3_bucket': bucket_name, # 버킷명
             'S3_key': 'gl_model_%s_V.h5'%latest_gl_model_v,  # 모델 가중치 파일 이름
             'play_datetime': today_time, # server 수행 시간
             'FLSeReady': True, # server 준비 상태 on
