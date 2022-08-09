@@ -6,8 +6,8 @@ import flwr as fl
 import tensorflow as tf
 import tensorflow_addons as tfa
 
-from keras.models import Sequential
-from keras.layers import Conv2D, MaxPool2D, Dropout, Flatten, Dense
+import health_dataset as dataset
+
 from keras.utils.np_utils import to_categorical
 
 import wandb
@@ -17,12 +17,6 @@ import boto3
 
 import requests, json
 import time
-
-# FL 하이퍼파라미터 설정
-num_rounds = 5
-local_epochs = 6
-batch_size = 2048
-val_steps = 5
 
 # 참고: https://loosie.tistory.com/210, https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/s3.html
 # aws session 연결
@@ -145,20 +139,13 @@ def gl_model_load():
         # global model 없을 시 초기 글로벌 모델 생성
         print('basic model making')
 
-        # model 생성
-        model = Sequential()
-
-        # Convolutional Block (Conv-Conv-Pool-Dropout)
-        model.add(Conv2D(32, (3, 3), activation='relu', padding='same', input_shape=(32, 32, 3)))
-        model.add(Conv2D(32, (3, 3), activation='relu', padding='same'))
-        model.add(MaxPool2D(pool_size=(2, 2)))
-        model.add(Dropout(0.25))
-
-        # Classifying
-        model.add(Flatten())
-        model.add(Dense(512, activation='relu'))
-        model.add(Dropout(0.5))
-        model.add(Dense(10, activation='softmax'))
+        model = tf.keras.Sequential([
+            tf.keras.layers.Dense(
+                16, activation='relu',
+                input_shape=(x_val.shape[-1],)), # input_shape에 x_val.shape[-1] 값을 넣으면 오류남 input_shape을 6으로 인식
+                # input_shape=(5,)),
+            tf.keras.layers.Dense(len(y_val[0]), activation='sigmoid'),
+        ])
 
         fl_server_start(model, y_val)
         
@@ -231,6 +218,12 @@ def evaluate_config(rnd: int):
 
 if __name__ == "__main__":
     
+    # FL 하이퍼파라미터 설정
+    num_rounds = 5
+    local_epochs = 6
+    batch_size = 2048
+    val_steps = 5
+
     today= datetime.today()
     today_time = today.strftime('%Y-%m-%d %H-%M-%S')
 
@@ -273,16 +266,14 @@ if __name__ == "__main__":
         "Model_V": next_gl_model})
     
     
-    # Cifar 10 데이터셋 불러오기
-    (X_train, y_train), (X_test, y_test) = tf.keras.datasets.cifar10.load_data()
-        
-    num_classes = 10	
+    # global model 평가를 위한 dataset 
+    df, p_list = dataset.data_load()
 
-    # global model 평가를 위한 데이터셋
-    x_val, y_val = X_test[1000:9000], y_test[1000:9000]
+    # Use the last 5k training examples as a validation set
+    x_val, y_val = df.iloc[:10000,1:6], df.loc[:9999,'label']
 
     # y(label) one-hot encoding
-    y_val = to_categorical(y_val, num_classes)
+    y_val = to_categorical(np.array(y_val))
 
     try:
         start_time = time.time()
