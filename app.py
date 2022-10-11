@@ -30,8 +30,8 @@ logger = logging.getLogger(__name__)
 class FL_server_parameter:
     num_rounds = 20
     local_epochs = 10
-    batch_size = 32
-    val_steps = 5
+    batch_size = 1024
+    val_steps = 10
     latest_gl_model_v = 0 # 이전 글로벌 모델 버전
     next_gl_model_v = 0 # 생성될 글로벌 모델 버전
     start_by_round = 0 # fit aggregation start
