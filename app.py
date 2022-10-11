@@ -258,6 +258,17 @@ def evaluate_config(rnd: int):
 
 
 if __name__ == "__main__":
+
+    # Cifar 10 데이터셋 불러오기
+    (X_train, y_train), (X_test, y_test) = tf.keras.datasets.cifar10.load_data()
+        
+    num_classes = 10	
+
+    # global model 평가를 위한 데이터셋
+    x_val, y_val = X_test[1000:9000], y_test[1000:9000]
+
+    # y(label) one-hot encoding
+    y_val = to_categorical(y_val, num_classes)
     
     today= datetime.today()
     today_time = today.strftime('%Y-%m-%d %H-%M-%S')
@@ -300,17 +311,6 @@ if __name__ == "__main__":
     #     config={"num_rounds": num_rounds,"local_epochs": local_epochs, "batch_size": batch_size,"val_steps": val_steps, "today_datetime": today_time,
     #     "Model_V": next_gl_model})
     
-    
-    # Cifar 10 데이터셋 불러오기
-    (X_train, y_train), (X_test, y_test) = tf.keras.datasets.cifar10.load_data()
-        
-    num_classes = 10	
-
-    # global model 평가를 위한 데이터셋
-    x_val, y_val = X_test[1000:9000], y_test[1000:9000]
-
-    # y(label) one-hot encoding
-    y_val = to_categorical(y_val, num_classes)
 
     try:
         fl_start_time = time.time()
