@@ -28,8 +28,8 @@ logger = logging.getLogger(__name__)
 
 # FL 하이퍼파라미터 설정
 class FL_server_parameter:
-    num_rounds = 3
-    local_epochs = 4
+    num_rounds = 2
+    local_epochs = 2
     batch_size = 32
     val_steps = 5
     latest_gl_model_v = 0 # 이전 글로벌 모델 버전
@@ -52,20 +52,20 @@ def aws_session(region_name='ap-northeast-2'):
 # s3에 global model upload
 def upload_model_to_bucket(global_model):
     bucket_name = os.environ.get('BUCKET_NAME')
-    global latest_gl_model_v, next_gl_model
+    global server
     
-    logging.info(f'gl_model_{next_gl_model}_V.h5 모델 업로드 시작')
+    logging.info(f'gl_model_{server.next_gl_model_v}_V.h5 모델 업로드 시작')
 
     session = aws_session()
     s3_resource = session.resource('s3')
     bucket = s3_resource.Bucket(bucket_name)
     bucket.upload_file(
-        Filename=f'/app/gl_model_{next_gl_model}_V.h5',
+        Filename=f'/app/gl_model_{server.next_gl_model_v}_V.h5',
         Key=global_model,
     )
     
     s3_url = f"https://{bucket_name}.s3.amazonaws.com/{global_model}"
-    logging.info(f'gl_model_{next_gl_model}_V.h5 모델 업로드 완료')
+    logging.info(f'gl_model_{server.next_gl_model_v}_V.h5 모델 업로드 완료')
     return s3_url
 
 # s3에 저장되어 있는 latest global model download
