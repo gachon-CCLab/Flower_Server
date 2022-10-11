@@ -203,8 +203,8 @@ def get_eval_fn(model):
         if server.round >= 1:
             # fit aggregation end time
             server.end_by_round = time.time() - server.start_by_round
-            round_server_operation_time = str(datetime.timedelta(seconds=server.end_by_round))
-            server_time_result = {"round": server.round, "operation_time_by_round": round_server_operation_time}
+            # round_server_operation_time = str(datetime.timedelta(seconds=server.end_by_round))
+            server_time_result = {"round": server.round, "operation_time_by_round": server.end_by_round}
             json_time_result = json.dumps(server_time_result)
             logging.info(f'server_time - {json_time_result}')
 
@@ -214,7 +214,7 @@ def get_eval_fn(model):
             logging.info(f'server_performance - {json_eval_result}')
             
         # model save
-        model.save('./gl_model/gl_model_%s_V.h5' % server.next_gl_model_v)
+        model.save('/app/gl_model_%s_V.h5' % server.next_gl_model_v)
 
         return loss, {"accuracy": accuracy}
 
@@ -318,9 +318,9 @@ if __name__ == "__main__":
         main(model)
 
         fl_end_time = time.time() - fl_start_time  # 연합학습 종료 시간
-        fl_server_operation_time = str(datetime.timedelta(seconds=fl_end_time)) # 연합학습 종료 시간
+        # fl_server_operation_time = str(datetime.timedelta(seconds=fl_end_time)) # 연합학습 종료 시간
 
-        server_all_time_result = {"operation_time": fl_server_operation_time}
+        server_all_time_result = {"operation_time": fl_end_time}
         json_all_time_result = json.dumps(server_all_time_result)
         logging.info(f'server_operation_time - {json_all_time_result}')
 
