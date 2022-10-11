@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 
 # FL 하이퍼파라미터 설정
 class FL_server_parameter:
-    num_rounds = 5
+    num_rounds = 20
     local_epochs = 2
     batch_size = 1024
     val_steps = 10
@@ -95,7 +95,7 @@ def model_download():
         gl_model_v = int(file_list[len(file_list)-1].split('_')[2])
         logging.info(f'gl_model: {gl_model_name}, gl_model_v: {gl_model_v}')
 
-        s3_resource.download_file(bucket_name, f'gl_model_{gl_model_v}_V.h5', f'/app/gl_model_{gl_model_name}_V.h5')
+        s3_resource.download_file(bucket_name, f'gl_model_{gl_model_v}_V.h5', f'/app/gl_model_{gl_model_v}_V.h5')
 
         gl_model = tf.keras.models.load_model(f'/app/gl_model_{gl_model_v}_V.h5')
 
