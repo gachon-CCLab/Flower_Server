@@ -89,13 +89,15 @@ def model_download():
             file_list.append(key)
 
         logging.info('model 있음')
-        logging.info('model_file_list: ', file_list)
-        gl_model = file_list[len(file_list)-1]
+        logging.info(f'model_file_list: {file_list}')
+        gl_model_name = file_list[len(file_list)-1]
         # print('gl_model: ', gl_model)
         gl_model_v = int(file_list[len(file_list)-1].split('_')[2])
-        logging.info(f'gl_model: {gl_model}, gl_model_v: {gl_model_v}')
+        logging.info(f'gl_model: {gl_model_name}, gl_model_v: {gl_model_v}')
 
-        s3_resource.download_file(bucket_name, f'gl_model_{gl_model_v}_V.h5', f'/app/gl_model_{gl_model_v}_V.h5')
+        s3_resource.download_file(bucket_name, f'gl_model_{gl_model_v}_V.h5', f'/app/gl_model_{gl_model_name}_V.h5')
+
+        gl_model = tf.keras.models.load_model(f'/app/gl_model_{gl_model_v}_V.h5')
 
         return gl_model, gl_model_v
 
