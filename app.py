@@ -321,6 +321,9 @@ if __name__ == "__main__":
         json_all_time_result = json.dumps(server_all_time_result)
         print(f'server_operation_time - {json_all_time_result}')
 
+        print('upload model in s3')
+        upload_model_to_bucket("gl_model_%s_V.h5" %server.next_gl_model_v)
+
         
         # server_status error
     except Exception as e:
