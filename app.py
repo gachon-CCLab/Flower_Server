@@ -10,13 +10,33 @@ import health_dataset as dataset
 
 from keras.utils.np_utils import to_categorical
 
-import wandb
+from keras.models import Sequential
+from keras.layers import Conv2D, MaxPool2D, Dropout, Flatten, Dense
+
+# import wandb
 from datetime import datetime
 import os
 import boto3
 import numpy as np
 import requests, json
 import time
+
+
+# FL 하이퍼파라미터 설정
+class FL_server_parameter:
+    num_rounds = 50
+    local_epochs = 20
+    batch_size = 32
+    val_steps = 5
+    latest_gl_model_v = 0 # 이전 글로벌 모델 버전
+    next_gl_model_v = 0 # 생성될 글로벌 모델 버전
+    start_by_round = 0 # fit aggregation start
+    end_by_round = 0 # fit aggregation end
+    round = 0 # round 수
+
+
+server = FL_server_parameter()
+
 
 # 참고: https://loosie.tistory.com/210, https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/s3.html
 # aws session 연결
@@ -46,6 +66,7 @@ def upload_model_to_bucket(global_model):
 
 # s3에 저장되어 있는 latest global model download
 def model_download():
+
     bucket_name = os.environ.get('BUCKET_NAME')
     print('bucket_name: ', bucket_name)
     global latest_gl_model_v, next_gl_model
@@ -76,106 +97,123 @@ def model_download():
 
     # s3에 global model 없을 경우
     except Exception as e:
-        print('error: ', e)
+        print('global model read error: ', e)
 
-        model_X = 'null'
+        model_X = None
         gl_model_v = 0
         print(f'gl_model: {model_X}, gl_model_v: {gl_model_v}')
         return model_X, gl_model_v
 
 
-def fl_server_start(model, y_val):
+def init_gl_model():
+    # model 생성
+    init_model = Sequential()
 
-    # Load and compile model for
-    # 1. server-side parameter initialization
-    # 2. server-side parameter evaluation    
-    
+    # Convolutional Block (Conv-Conv-Pool-Dropout)
+    init_model.add(Conv2D(32, (3, 3), activation='relu', padding='same', input_shape=(32, 32, 3)))
+    init_model.add(Conv2D(32, (3, 3), activation='relu', padding='same'))
+    init_model.add(MaxPool2D(pool_size=(2, 2)))
+    init_model.add(Dropout(0.25))
+
+    # Classifying
+    init_model.add(Flatten())
+    init_model.add(Dense(512, activation='relu'))
+    init_model.add(Dropout(0.5))
+    init_model.add(Dense(10, activation='softmax'))
+
     METRICS = [
         tf.keras.metrics.BinaryAccuracy(name='accuracy'),
-        tf.keras.metrics.Precision(name='precision'),
-        tf.keras.metrics.Recall(name='recall'),
-        tf.keras.metrics.AUC(name='auc'),
-        tfa.metrics.F1Score(name='f1_score', num_classes=len(y_val[0]), average='micro'),
-        tf.keras.metrics.AUC(name='auprc', curve='PR'), # precision-recall curve
-        ]
+    ]
 
-    model.compile(loss='categorical_crossentropy', optimizer=tf.keras.optimizers.Adam(lr=0.001), metrics=METRICS)
+    init_model.compile(loss='categorical_crossentropy', optimizer=tf.keras.optimizers.Adam(learning_rate=0.001),
+                  metrics=METRICS)
 
+    return init_model
+
+
+def main(model) -> None:
+
+    global server
+
+    print(f'latest_gl_model_v: {server.latest_gl_model_v}')
+
+    if not model:
+
+        print('init global model making')
+        init_model = init_gl_model()
+
+        fl_server_start(init_model)
+
+    else:
+        print('load latest global model')
+
+        fl_server_start(model)
+
+
+def fl_server_start(model):
+    # Load and compile model for
+    # 1. server-side parameter initialization
+    # 2. server-side parameter evaluation
 
     # Create strategy
     strategy = fl.server.strategy.FedAvg(
         # fraction_fit > fraction_eval이여야 함
         # min_available_clients의 수를 실제 연결 client 수 보다 작게 하는게 안정적임
         # => client가 학습 중에 멈추는 현상이 가끔 발생
-        fraction_fit=0.6, # 클라이언트 학습 참여 비율
-        fraction_eval=0.5, # 클라이언트 평가 참여 비율
-        min_fit_clients=4, # 최소 학습 참여 수
-        min_eval_clients=4, # 최소 평가 참여 수
-        min_available_clients=3, # 최소 클라이언트 연결 필요 수
-        eval_fn=get_eval_fn(model), # 모델 평가 결과
-        on_fit_config_fn=fit_config, # batchsize, epoch 수
-        on_evaluate_config_fn=evaluate_config, # val_step
-        initial_parameters=fl.common.weights_to_parameters(model.get_weights()),
+        fraction_fit=1.0,  # 클라이언트 학습 참여 비율
+        fraction_evaluate=1.0,  # 클라이언트 평가 참여 비율
+        min_fit_clients=2,  # 최소 학습 참여 수
+        min_evaluate_clients=2,  # 최소 평가 참여 수
+        min_available_clients=2,  # 최소 클라이언트 연결 필요 수
+        evaluate_fn=get_eval_fn(model),  # 모델 평가 결과
+        on_fit_config_fn=fit_config,  # batchsize, epoch 수
+        on_evaluate_config_fn=evaluate_config,  # val_step
+        initial_parameters=fl.common.ndarrays_to_parameters(model.get_weights()),
     )
 
-    # Start Flower server for four rounds of federated learning
-    fl.server.start_server("0.0.0.0:8080", config={"num_rounds": num_rounds}, strategy=strategy)
-
-def gl_model_load():
-
-    global num_rounds, latest_gl_model_v
-    global x_val, y_val # f1_score 계산을 위해 label 개수 확인
-
-    print('')
-    print('latest_gl_model_v', latest_gl_model_v)
-    print('')
-    
-    if os.path.isfile('/app/gl_model_%s_V.h5'%latest_gl_model_v):
-        print('load model')
-        model = tf.keras.models.load_model('/app/gl_model_%s_V.h5'%latest_gl_model_v)
-        fl_server_start(model, y_val)
-
-    else:
-        # global model 없을 시 초기 글로벌 모델 생성
-        print('basic model making')
-
-        model = tf.keras.Sequential([
-            tf.keras.layers.Dense(
-                16, activation='relu',
-                input_shape=(x_val.shape[-1],)), # input_shape에 x_val.shape[-1] 값을 넣으면 오류남 input_shape을 6으로 인식
-                # input_shape=(5,)),
-            tf.keras.layers.Dense(len(y_val[0]), activation='sigmoid'),
-        ])
-
-        fl_server_start(model, y_val)
+    # Start Flower server (SSL-enabled) for four rounds of federated learning
+    fl.server.start_server(
+        server_address="0.0.0.0:8080",
+        config=fl.server.ServerConfig(num_rounds=server.FL_num_rounds),
+        strategy=strategy,
+    )
         
 
 def get_eval_fn(model):
     """Return an evaluation function for server-side evaluation."""
     # Load data and model here to avoid the overhead of doing it in `evaluate` itself
-    global x_val, y_val
-
-    # print('get_eval_fn x_val length: ', x_val.shape[-1])
+    global server
 
     # The `evaluate` function will be called after every round
     def evaluate(
-        weights: fl.common.Weights,
+        server_round: int,
+        parameters: fl.common.NDArrays,
+        config: Dict[str, fl.common.Scalar],
     ) -> Optional[Tuple[float, Dict[str, fl.common.Scalar]]]:
-        model.set_weights(weights)  # Update model with the latest parameters
+
+        if server.round >= 1:
+            # fit aggregation end time
+            server.end_by_round = time.time() - server.start_by_round
+            round_server_operation_time = str(datetime.timedelta(seconds=server.end_by_round))
+            server_time_result = {"round": server.round, "operation_time_by_round": round_server_operation_time}
+            json_time_result = json.dumps(server_time_result)
+            print(f'server_time - {json_time_result}')
+            # print(f'round: {server.round}, operation_time_by_round: {round_server_operation_time}')
+
+        model.set_weights(parameters)  # Update model with the latest parameters
         
         # loss, accuracy, precision, recall, auc, auprc = model.evaluate(x_val, y_val)
-        loss, accuracy, precision, recall, f1_score, auc, auprc = model.evaluate(x_val, y_val)
+        loss, accuracy = model.evaluate(x_val, y_val)
 
-        global next_gl_model
+        server_eval_result = {"gl_loss": loss, "gl_accuracy": accuracy}
+        json_eval_result = json.dumps(server_eval_result)
+        print(f'server_performance - {json_eval_result}')
+        # print(f'gl_loss: {loss}, gl_accuracy: {accuracy}')
 
         # model save
-        model.save("/app/gl_model_%s_V.h5"%next_gl_model)
+        model.save('./gl_model/gl_model_%s_V.h5' % server.next_gl_model_v)
 
-        # wandb에 log upload        
-        wandb.log({'loss':loss,"accuracy": accuracy, "precision": precision, "recall": recall, "auc": auc, "auprc": auprc, "f1_score": f1_score})
-
-        
-        return loss, {"accuracy": accuracy, "precision": precision, "recall": recall, "auc": auc, "auprc": auprc, "f1_score":f1_score}
+        return loss, {"accuracy": accuracy}
 
     return evaluate
 
@@ -185,18 +223,21 @@ def fit_config(rnd: int):
     Keep batch size fixed at 32, perform two rounds of training with one
     local epoch, increase to two local epochs afterwards.
     """
-
-    global batch_size, local_epochs
+    global server
 
     config = {
-        "batch_size": batch_size,
-        # "local_epochs": 1 if rnd < 2 else 2,
-        "local_epochs": local_epochs,
-        "num_rounds": num_rounds,
+        "batch_size": server.batch_size,
+        "local_epochs": server.local_epochs,
+        "num_rounds": server.num_rounds,
     }
 
-    # wandb log upload
-    wandb.config.update({"local_epochs": local_epochs, "batch_size": batch_size},allow_val_change=True)
+    # increase round
+    server.round += 1
+
+    # if server.round > 2:
+    # fit aggregation start time
+    server.start_by_round = time.time()
+    print('server start by round')
 
     return config
 
@@ -207,31 +248,21 @@ def evaluate_config(rnd: int):
     batches) during rounds one to three, then increase to ten local
     evaluation steps.
     """
-    # val_steps = 5 if rnd < 4 else 10
-    global val_steps
+    global server
 
-    # wandb log upload
-    wandb.config.update({"val_steps": val_steps},allow_val_change=True)
-    
-    return {"val_steps": val_steps}
+    return {"val_steps": server.val_steps}
 
 
 if __name__ == "__main__":
     
-    # FL 하이퍼파라미터 설정
-    num_rounds = 5
-    local_epochs = 6
-    batch_size = 2048
-    val_steps = 5
-
     today= datetime.today()
     today_time = today.strftime('%Y-%m-%d %H-%M-%S')
 
     # global model download
-    model, latest_gl_model_v = model_download()
+    model, server.latest_gl_model_v = model_download()
 
     # 새로 생성되는 글로벌 모델 버전
-    next_gl_model = latest_gl_model_v + 1
+    server.next_gl_model_v = server.latest_gl_model_v + 1
 
 
     # server_status 주소
@@ -240,10 +271,10 @@ if __name__ == "__main__":
     inform_Payload = {
             # 형식
             'S3_bucket': 'fl-gl-model', # 버킷명
-            'S3_key': 'gl_model_%s_V.h5'%latest_gl_model_v,  # 모델 가중치 파일 이름
+            'S3_key': 'gl_model_%s_V.h5'%server.latest_gl_model_v,  # 모델 가중치 파일 이름
             'play_datetime': today_time, # server 수행 시간
             'FLSeReady': True, # server 준비 상태 on
-            'GL_Model_V' : latest_gl_model_v # GL 모델 버전
+            'GL_Model_V' : server.latest_gl_model_v # GL 모델 버전
         }
 
     while True:
@@ -260,30 +291,35 @@ if __name__ == "__main__":
             continue
     
     # wandb login and init
-    wandb.login(key='6266dbc809b57000d78fb8b163179a0a3d6eeb37')
-    wandb.init(entity='ccl-fl', project='fl-server-news', name= 'server_V%s'%next_gl_model, dir='/',  \
-        config={"num_rounds": num_rounds,"local_epochs": local_epochs, "batch_size": batch_size,"val_steps": val_steps, "today_datetime": today_time,
-        "Model_V": next_gl_model})
+    # wandb.login(key='6266dbc809b57000d78fb8b163179a0a3d6eeb37')
+    # wandb.init(entity='ccl-fl', project='fl-server-news', name= 'server_V%s'%next_gl_model, dir='/',  \
+    #     config={"num_rounds": num_rounds,"local_epochs": local_epochs, "batch_size": batch_size,"val_steps": val_steps, "today_datetime": today_time,
+    #     "Model_V": next_gl_model})
     
     
-    # global model 평가를 위한 dataset 
-    df, p_list = dataset.data_load()
+    # Cifar 10 데이터셋 불러오기
+    (X_train, y_train), (X_test, y_test) = tf.keras.datasets.cifar10.load_data()
+        
+    num_classes = 10	
 
-    # Use the last 5k training examples as a validation set
-    x_val, y_val = df.iloc[:10000,1:6], df.loc[:9999,'label']
+    # global model 평가를 위한 데이터셋
+    x_val, y_val = X_test[1000:9000], y_test[1000:9000]
 
     # y(label) one-hot encoding
-    y_val = to_categorical(np.array(y_val))
+    y_val = to_categorical(y_val, num_classes)
 
     try:
-        start_time = time.time()
+        fl_start_time = time.time()
+
         # Flower Server 실행
-        gl_model_load()
-        end_time = time.time()
-        excution_time = end_time - start_time
-        print('excution_time: ', excution_time)
-        # s3 버킷에 global model upload
-        upload_model_to_bucket("gl_model_%s_V.h5" %next_gl_model)
+        main(model)
+
+        fl_end_time = time.time() - fl_start_time  # 연합학습 종료 시간
+        fl_server_operation_time = str(datetime.timedelta(seconds=fl_end_time)) # 연합학습 종료 시간
+
+        server_all_time_result = {"operation_time": fl_server_operation_time}
+        json_all_time_result = json.dumps(server_all_time_result)
+        print(f'server_operation_time - {json_all_time_result}')
 
         
         # server_status error
@@ -302,4 +338,4 @@ if __name__ == "__main__":
             print('global model version: ', res.json()['Server_Status']['GL_Model_V'])
 
         # wandb 종료
-        wandb.finish()
+        # wandb.finish()
