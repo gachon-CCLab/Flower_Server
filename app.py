@@ -18,6 +18,10 @@ import boto3
 import requests, json
 import time
 
+# TF warning log 필터링
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
+
+
 logging.basicConfig(level=logging.DEBUG, format="%(asctime)s [%(levelname)8.8s] %(message)s",
                     handlers=[logging.StreamHandler()])
 logger = logging.getLogger(__name__)
