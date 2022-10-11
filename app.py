@@ -5,9 +5,6 @@ from typing import Dict,Optional, Tuple
 
 import flwr as fl
 import tensorflow as tf
-import tensorflow_addons as tfa
-
-import health_dataset as dataset
 
 from keras.utils.np_utils import to_categorical
 
@@ -18,10 +15,12 @@ from keras.layers import Conv2D, MaxPool2D, Dropout, Flatten, Dense
 from datetime import datetime
 import os
 import boto3
-import numpy as np
 import requests, json
 import time
 
+logging.basicConfig(level=logging.DEBUG, format="%(asctime)s [%(levelname)8.8s] %(message)s",
+                    handlers=[logging.StreamHandler()])
+logger = logging.getLogger(__name__)
 
 # FL 하이퍼파라미터 설정
 class FL_server_parameter:
