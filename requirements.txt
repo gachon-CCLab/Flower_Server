@@ -5,5 +5,5 @@ uvicorn[standard]==0.16.0
 requests==2.26.0
 boto3
 tensorflow
-keras
+keras==2.8.0
 pydantic
