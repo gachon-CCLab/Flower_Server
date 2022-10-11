@@ -12,7 +12,7 @@ from keras.models import Sequential
 from keras.layers import Conv2D, MaxPool2D, Dropout, Flatten, Dense
 
 # import wandb
-from datetime import datetime
+import datetime
 import os
 import boto3
 import requests, json
@@ -202,17 +202,16 @@ def get_eval_fn(model):
             server_time_result = {"round": server.round, "operation_time_by_round": round_server_operation_time}
             json_time_result = json.dumps(server_time_result)
             logging.info(f'server_time - {json_time_result}')
-            # print(f'round: {server.round}, operation_time_by_round: {round_server_operation_time}')
+
+            # round 별 glmodel 성능
+            server_eval_result = {"round": server.round, "gl_loss": loss, "gl_accuracy": accuracy}
+            json_eval_result = json.dumps(server_eval_result)
+            logging.info(f'server_performance - {json_eval_result}')
 
         model.set_weights(parameters)  # Update model with the latest parameters
         
         # loss, accuracy, precision, recall, auc, auprc = model.evaluate(x_val, y_val)
         loss, accuracy = model.evaluate(x_val, y_val)
-
-        server_eval_result = {"round": server.round, "gl_loss": loss, "gl_accuracy": accuracy}
-        json_eval_result = json.dumps(server_eval_result)
-        logging.info(f'server_performance - {json_eval_result}')
-        # print(f'gl_loss: {loss}, gl_accuracy: {accuracy}')
 
         # model save
         model.save('./gl_model/gl_model_%s_V.h5' % server.next_gl_model_v)
@@ -270,7 +269,7 @@ if __name__ == "__main__":
     # y(label) one-hot encoding
     y_val = to_categorical(y_val, num_classes)
     
-    today= datetime.today()
+    today= datetime.datetime.today()
     today_time = today.strftime('%Y-%m-%d %H-%M-%S')
 
     # global model download
