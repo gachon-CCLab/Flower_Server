@@ -1,14 +1,9 @@
-#pandas==1.4.1
+numpy
 flwr==1.0.0
 fastapi==0.70.1
 uvicorn[standard]==0.16.0
 requests==2.26.0
 boto3
-numpy
-tensorflow==2.6.0
-#wget==3.2
+tensorflow==2.7.0
 keras==2.6.0
-#wandb==0.12.11
-#pyarrow
 pydantic
-#tensorflow_addons
