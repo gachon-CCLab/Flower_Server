@@ -195,6 +195,11 @@ def get_eval_fn(model):
         config: Dict[str, fl.common.Scalar],
     ) -> Optional[Tuple[float, Dict[str, fl.common.Scalar]]]:
 
+        # loss, accuracy, precision, recall, auc, auprc = model.evaluate(x_val, y_val)
+        loss, accuracy = model.evaluate(x_val, y_val)
+
+        model.set_weights(parameters)  # Update model with the latest parameters
+
         if server.round >= 1:
             # fit aggregation end time
             server.end_by_round = time.time() - server.start_by_round
@@ -207,12 +212,7 @@ def get_eval_fn(model):
             server_eval_result = {"round": server.round, "gl_loss": loss, "gl_accuracy": accuracy}
             json_eval_result = json.dumps(server_eval_result)
             logging.info(f'server_performance - {json_eval_result}')
-
-        model.set_weights(parameters)  # Update model with the latest parameters
-        
-        # loss, accuracy, precision, recall, auc, auprc = model.evaluate(x_val, y_val)
-        loss, accuracy = model.evaluate(x_val, y_val)
-
+            
         # model save
         model.save('./gl_model/gl_model_%s_V.h5' % server.next_gl_model_v)
 
