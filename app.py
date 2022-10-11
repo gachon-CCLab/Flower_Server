@@ -320,7 +320,7 @@ if __name__ == "__main__":
         fl_end_time = time.time() - fl_start_time  # 연합학습 종료 시간
         # fl_server_operation_time = str(datetime.timedelta(seconds=fl_end_time)) # 연합학습 종료 시간
 
-        server_all_time_result = {"operation_time": fl_end_time}
+        server_all_time_result = {"gl_model_v": server.next_gl_model_v,"operation_time": fl_end_time}
         json_all_time_result = json.dumps(server_all_time_result)
         logging.info(f'server_operation_time - {json_all_time_result}')
 
@@ -341,7 +341,7 @@ if __name__ == "__main__":
         res = requests.put(inform_SE + 'FLRoundFin', params={'FLSeReady': 'false'})
         if res.status_code == 200:
             logging.info('global model version upgrade')
-            logging.info('global model version: ', res.json()['Server_Status']['GL_Model_V'])
+            # logging.info('global model version: ', res.json()['Server_Status']['GL_Model_V'])
 
         # wandb 종료
         # wandb.finish()
