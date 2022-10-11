@@ -1,5 +1,6 @@
 # https://github.com/adap/flower/tree/main/examples/advanced_tensorflow 참조
 
+import logging
 from typing import Dict,Optional, Tuple
 
 import flwr as fl
@@ -50,7 +51,7 @@ def upload_model_to_bucket(global_model):
     bucket_name = os.environ.get('BUCKET_NAME')
     global latest_gl_model_v, next_gl_model
     
-    print(f'gl_model_{next_gl_model}_V.h5 모델 업로드 시작')
+    logging.info(f'gl_model_{next_gl_model}_V.h5 모델 업로드 시작')
 
     session = aws_session()
     s3_resource = session.resource('s3')
@@ -61,14 +62,14 @@ def upload_model_to_bucket(global_model):
     )
     
     s3_url = f"https://{bucket_name}.s3.amazonaws.com/{global_model}"
-    print(f'gl_model_{next_gl_model}_V.h5 모델 업로드 완료')
+    logging.info(f'gl_model_{next_gl_model}_V.h5 모델 업로드 완료')
     return s3_url
 
 # s3에 저장되어 있는 latest global model download
 def model_download():
 
     bucket_name = os.environ.get('BUCKET_NAME')
-    print('bucket_name: ', bucket_name)
+    # print('bucket_name: ', bucket_name)
     global latest_gl_model_v, next_gl_model
     
     try:
@@ -84,12 +85,12 @@ def model_download():
             key = content['Key']
             file_list.append(key)
 
-        print('model 있음')
-        print('model_file_list: ', file_list)
+        logging.info('model 있음')
+        logging.info('model_file_list: ', file_list)
         gl_model = file_list[len(file_list)-1]
-        print('gl_model: ', gl_model)
+        # print('gl_model: ', gl_model)
         gl_model_v = int(file_list[len(file_list)-1].split('_')[2])
-        print(f'gl_model: {gl_model}, gl_model_v: {gl_model_v}')
+        logging.info(f'gl_model: {gl_model}, gl_model_v: {gl_model_v}')
 
         s3_resource.download_file(bucket_name, f'gl_model_{gl_model_v}_V.h5', f'/app/gl_model_{gl_model_v}_V.h5')
 
@@ -97,11 +98,11 @@ def model_download():
 
     # s3에 global model 없을 경우
     except Exception as e:
-        print('global model read error: ', e)
+        logging.error('global model read error: ', e)
 
         model_X = None
         gl_model_v = 0
-        print(f'gl_model: {model_X}, gl_model_v: {gl_model_v}')
+        logging.info(f'gl_model: {model_X}, gl_model_v: {gl_model_v}')
         return model_X, gl_model_v
 
 
@@ -135,17 +136,17 @@ def main(model) -> None:
 
     global server
 
-    print(f'latest_gl_model_v: {server.latest_gl_model_v}')
+    logging.info(f'latest_gl_model_v: {server.latest_gl_model_v}')
 
     if not model:
 
-        print('init global model making')
+        logging.info('init global model making')
         init_model = init_gl_model()
 
         fl_server_start(init_model)
 
     else:
-        print('load latest global model')
+        logging.info('load latest global model')
 
         fl_server_start(model)
 
@@ -197,7 +198,7 @@ def get_eval_fn(model):
             round_server_operation_time = str(datetime.timedelta(seconds=server.end_by_round))
             server_time_result = {"round": server.round, "operation_time_by_round": round_server_operation_time}
             json_time_result = json.dumps(server_time_result)
-            print(f'server_time - {json_time_result}')
+            logging.info(f'server_time - {json_time_result}')
             # print(f'round: {server.round}, operation_time_by_round: {round_server_operation_time}')
 
         model.set_weights(parameters)  # Update model with the latest parameters
@@ -207,7 +208,7 @@ def get_eval_fn(model):
 
         server_eval_result = {"gl_loss": loss, "gl_accuracy": accuracy}
         json_eval_result = json.dumps(server_eval_result)
-        print(f'server_performance - {json_eval_result}')
+        logging.info(f'server_performance - {json_eval_result}')
         # print(f'gl_loss: {loss}, gl_accuracy: {accuracy}')
 
         # model save
@@ -237,7 +238,7 @@ def fit_config(rnd: int):
     # if server.round > 2:
     # fit aggregation start time
     server.start_by_round = time.time()
-    print('server start by round')
+    logging.info('server start by round')
 
     return config
 
@@ -284,9 +285,9 @@ if __name__ == "__main__":
             if r.status_code == 200:
                 break
             else:
-                print(r.content)
+                logging.error(r.content)
         except:
-            print("Connection refused by the server..")
+            logging.error("Connection refused by the server..")
             time.sleep(5)
             continue
     
@@ -319,26 +320,26 @@ if __name__ == "__main__":
 
         server_all_time_result = {"operation_time": fl_server_operation_time}
         json_all_time_result = json.dumps(server_all_time_result)
-        print(f'server_operation_time - {json_all_time_result}')
+        logging.info(f'server_operation_time - {json_all_time_result}')
 
-        print('upload model in s3')
+        logging.info('upload model in s3')
         upload_model_to_bucket("gl_model_%s_V.h5" %server.next_gl_model_v)
 
         
         # server_status error
     except Exception as e:
-        print('error: ', e)
+        logging.error('error: ', e)
         data_inform = {'FLSeReady': False}
         requests.put(inform_SE+'FLSeUpdate', data=json.dumps(data_inform))
         
     finally:
-        print('server close')
+        logging.info('server close')
       
         # server_status에 model 버전 수정 update request
         res = requests.put(inform_SE + 'FLRoundFin', params={'FLSeReady': 'false'})
         if res.status_code == 200:
-            print('global model version upgrade')
-            print('global model version: ', res.json()['Server_Status']['GL_Model_V'])
+            logging.info('global model version upgrade')
+            logging.info('global model version: ', res.json()['Server_Status']['GL_Model_V'])
 
         # wandb 종료
         # wandb.finish()
