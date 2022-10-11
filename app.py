@@ -268,6 +268,9 @@ if __name__ == "__main__":
     # global model 평가를 위한 데이터셋
     x_val, y_val = X_test[1000:9000], y_test[1000:9000]
 
+    # 전처리
+    x_val = x_val.astype('float32') / 255.0
+
     # y(label) one-hot encoding
     y_val = to_categorical(y_val, num_classes)
     
