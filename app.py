@@ -209,7 +209,7 @@ def get_eval_fn(model):
         # loss, accuracy, precision, recall, auc, auprc = model.evaluate(x_val, y_val)
         loss, accuracy = model.evaluate(x_val, y_val)
 
-        server_eval_result = {"gl_loss": loss, "gl_accuracy": accuracy}
+        server_eval_result = {"round": server.round, "gl_loss": loss, "gl_accuracy": accuracy}
         json_eval_result = json.dumps(server_eval_result)
         logging.info(f'server_performance - {json_eval_result}')
         # print(f'gl_loss: {loss}, gl_accuracy: {accuracy}')
