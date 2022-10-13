@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 # FL 하이퍼파라미터 설정
 class FL_server_parameter:
     num_rounds = 50
-    local_epochs = 20
+    local_epochs = 15
     batch_size = 1024
     val_steps = 10
     latest_gl_model_v = 0 # 이전 글로벌 모델 버전
