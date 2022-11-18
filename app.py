@@ -1,6 +1,7 @@
 # https://github.com/adap/flower/tree/main/examples/advanced_tensorflow 참조
 
 import logging
+import re
 from typing import Dict,Optional, Tuple
 
 import flwr as fl
@@ -90,9 +91,14 @@ def model_download():
 
         logging.info('model 있음')
         logging.info(f'model_file_list: {file_list}')
-        gl_model_name = file_list[len(file_list)-1]
-        # print('gl_model: ', gl_model)
-        gl_model_v = int(file_list[len(file_list)-1].split('_')[2])
+
+        p = re.compile(r'\d+') # 숫자 패턴 추출
+        gl_list_sorted = sorted(file_list, key=lambda v: int(p.search(v).group())) # gl model 버전에 따라 정렬
+
+        gl_model_name = gl_list_sorted[len(gl_list_sorted)-1] # 최근 gl model 추출
+        # gl_model = tf.keras.models.load_model(f'./gl_model/{gl_model_name}')
+        gl_model_v = int(gl_model_name.split('_')[2])
+
         logging.info(f'gl_model: {gl_model_name}, gl_model_v: {gl_model_v}')
 
         s3_resource.download_file(bucket_name, f'gl_model_{gl_model_v}_V.h5', f'/app/gl_model_{gl_model_v}_V.h5')
