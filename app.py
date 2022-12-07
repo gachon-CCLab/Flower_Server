@@ -293,7 +293,7 @@ if __name__ == "__main__":
     # server_status 주소
     # 학교 내부에서 외부 ip 접근 안됨 => ccljhub.gachon.ac.kr 접근 X
     # kubernetes 내부 ip로 접근해야 함
-    inform_SE: str = '10.152.183.2:8000/FLSe/'
+    inform_SE: str = '192.168.1.243:8000/FLSe/'
 
     inform_Payload = {
             # 형식
@@ -314,7 +314,7 @@ if __name__ == "__main__":
                 logging.error(r.content)
         except:
             logging.error("Connection refused by the server..")
-            # time.sleep(5)
+            time.sleep(5)
             continue
     
 
