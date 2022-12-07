@@ -28,7 +28,7 @@ logging.basicConfig(level=logging.DEBUG, format="%(asctime)s [%(levelname)8.8s] 
 logger = logging.getLogger(__name__)
 
 # FL 하이퍼파라미터 설정
-class FL_server_parameter:
+class FL_server:
     num_rounds = 10
     local_epochs = 25
     batch_size = 128
@@ -40,7 +40,7 @@ class FL_server_parameter:
     round = 0 # round 수
 
 
-server = FL_server_parameter()
+server = FL_server()
 
 
 # 참고: https://loosie.tistory.com/210, https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/s3.html
@@ -291,7 +291,9 @@ if __name__ == "__main__":
 
 
     # server_status 주소
-    inform_SE: str = 'http://ccljhub.gachon.ac.kr:40019/FLSe/'
+    # 학교 내부에서 외부 ip 접근 안됨 => ccljhub.gachon.ac.kr 접근 X
+    # kubernetes 내부 ip로 접근해야 함
+    inform_SE: str = '10.152.183.2:8000/FLSe/'
 
     inform_Payload = {
             # 형식
@@ -312,7 +314,7 @@ if __name__ == "__main__":
                 logging.error(r.content)
         except:
             logging.error("Connection refused by the server..")
-            time.sleep(5)
+            # time.sleep(5)
             continue
     
 
