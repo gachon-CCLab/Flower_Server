@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 # FL 하이퍼파라미터 설정
 class FL_server_parameter:
     num_rounds = 10
-    local_epochs = 5
+    local_epochs = 25
     batch_size = 128
     val_steps = 10
     latest_gl_model_v = 0 # 이전 글로벌 모델 버전
@@ -174,9 +174,9 @@ def fl_server_start(model):
         # => client가 학습 중에 멈추는 현상이 가끔 발생
         fraction_fit=1.0,  # 클라이언트 학습 참여 비율
         fraction_evaluate=1.0,  # 클라이언트 평가 참여 비율
-        min_fit_clients=5,  # 최소 학습 참여 수
-        min_evaluate_clients=5,  # 최소 평가 참여 수
-        min_available_clients=5,  # 최소 클라이언트 연결 필요 수
+        min_fit_clients=1,  # 최소 학습 참여 수
+        min_evaluate_clients=1,  # 최소 평가 참여 수
+        min_available_clients=1,  # 최소 클라이언트 연결 필요 수
         evaluate_fn=get_eval_fn(model),  # 모델 평가 결과
         on_fit_config_fn=fit_config,  # batchsize, epoch 수
         on_evaluate_config_fn=evaluate_config,  # val_step
@@ -291,7 +291,7 @@ if __name__ == "__main__":
 
 
     # server_status 주소
-    inform_SE: str = 'http://10.152.183.114:8000/FLSe/'
+    inform_SE: str = 'http://http://ccljhub.gachon.ac.kr:40019/FLSe/'
 
     inform_Payload = {
             # 형식
