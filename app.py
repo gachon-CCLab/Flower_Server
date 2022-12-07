@@ -109,8 +109,7 @@ def model_download():
 
     # s3에 global model 없을 경우
     except Exception as e:
-        logging.error('global model read error: ', e)
-
+        logging.info('No read global model')
         model_X = None
         gl_model_v = 0
         logging.info(f'gl_model: {model_X}, gl_model_v: {gl_model_v}')
@@ -285,6 +284,7 @@ if __name__ == "__main__":
 
     # global model download
     model, server.latest_gl_model_v = model_download()
+    logging.info('Loaded latest global model or no global model')
 
     # 새로 생성되는 글로벌 모델 버전
     server.next_gl_model_v = server.latest_gl_model_v + 1
@@ -314,12 +314,6 @@ if __name__ == "__main__":
             logging.error("Connection refused by the server..")
             time.sleep(5)
             continue
-    
-    # wandb login and init
-    # wandb.login(key='6266dbc809b57000d78fb8b163179a0a3d6eeb37')
-    # wandb.init(entity='ccl-fl', project='fl-server-news', name= 'server_V%s'%next_gl_model, dir='/',  \
-    #     config={"num_rounds": num_rounds,"local_epochs": local_epochs, "batch_size": batch_size,"val_steps": val_steps, "today_datetime": today_time,
-    #     "Model_V": next_gl_model})
     
 
     try:
@@ -354,5 +348,3 @@ if __name__ == "__main__":
             logging.info('global model version upgrade')
             # logging.info('global model version: ', res.json()['Server_Status']['GL_Model_V'])
 
-        # wandb 종료
-        # wandb.finish()
