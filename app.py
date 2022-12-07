@@ -291,7 +291,7 @@ if __name__ == "__main__":
 
 
     # server_status 주소
-    inform_SE: str = 'http://http://ccljhub.gachon.ac.kr:40019/FLSe/'
+    inform_SE: str = 'http://ccljhub.gachon.ac.kr:40019/FLSe/'
 
     inform_Payload = {
             # 형식
