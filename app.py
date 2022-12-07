@@ -292,8 +292,8 @@ if __name__ == "__main__":
 
     # server_status 주소
     # 학교 내부에서 외부 ip 접근 안됨 => ccljhub.gachon.ac.kr 접근 X
-    # kubernetes 내부 ip로 접근해야 함
-    inform_SE: str = '192.168.1.243:8000/FLSe/'
+    # kubernetes 내부 ip로 접근해야 함 => LoadBalncer일 경우 Service External IP로 설정
+    inform_SE: str = 'http://10.152.183.2:8000/FLSe/'
 
     inform_Payload = {
             # 형식
