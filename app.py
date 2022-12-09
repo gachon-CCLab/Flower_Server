@@ -29,8 +29,8 @@ logger = logging.getLogger(__name__)
 
 # FL 하이퍼파라미터 설정
 class FL_server:
-    num_rounds = 10
-    local_epochs = 25
+    num_rounds = 5
+    local_epochs = 10
     batch_size = 128
     val_steps = 10
     latest_gl_model_v = 0 # 이전 글로벌 모델 버전
@@ -332,7 +332,9 @@ if __name__ == "__main__":
         logging.info(f'server_operation_time - {json_all_time_result}')
 
         logging.info('upload model in s3')
-        upload_model_to_bucket("gl_model_%s_V.h5" %server.next_gl_model_v)
+
+        # upload global model
+        # upload_model_to_bucket("gl_model_%s_V.h5" %server.next_gl_model_v)
 
         
         # server_status error
