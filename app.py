@@ -173,9 +173,9 @@ def fl_server_start(model):
         # => client가 학습 중에 멈추는 현상이 가끔 발생
         fraction_fit=1.0,  # 클라이언트 학습 참여 비율
         fraction_evaluate=1.0,  # 클라이언트 평가 참여 비율
-        min_fit_clients=1,  # 최소 학습 참여 수
-        min_evaluate_clients=1,  # 최소 평가 참여 수
-        min_available_clients=1,  # 최소 클라이언트 연결 필요 수
+        min_fit_clients=4,  # 최소 학습 참여 수
+        min_evaluate_clients=4,  # 최소 평가 참여 수
+        min_available_clients=4,  # 최소 클라이언트 연결 필요 수
         evaluate_fn=get_eval_fn(model),  # 모델 평가 결과
         on_fit_config_fn=fit_config,  # batchsize, epoch 수
         on_evaluate_config_fn=evaluate_config,  # val_step
@@ -282,9 +282,13 @@ if __name__ == "__main__":
     today= datetime.datetime.today()
     today_time = today.strftime('%Y-%m-%d %H-%M-%S')
 
+    # global model init
+    model = None
+    server.latest_gl_model_v = 0
+
     # global model download
-    model, server.latest_gl_model_v = model_download()
-    logging.info('Loaded latest global model or no global model')
+    # model, server.latest_gl_model_v = model_download()
+    # logging.info('Loaded latest global model or no global model')
 
     # 새로 생성되는 글로벌 모델 버전
     server.next_gl_model_v = server.latest_gl_model_v + 1
