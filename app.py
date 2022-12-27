@@ -271,7 +271,7 @@ if __name__ == "__main__":
     num_classes = 10	
 
     # global model 평가를 위한 데이터셋
-    x_val, y_val = X_test[1000:9000], y_test[1000:9000]
+    x_val, y_val = X_test[40000:50000], y_test[9000:10000]
 
     # 전처리
     x_val = x_val.astype('float32') / 255.0
