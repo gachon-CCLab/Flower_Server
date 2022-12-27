@@ -274,7 +274,7 @@ if __name__ == "__main__":
     x_val, y_val = X_test[9000:10000], y_test[9000:10000]
 
     # 전처리
-    x_val = x_val.astype('float32') / 255.0
+    # x_val = x_val.astype('float32') / 255.0
 
     # y(label) one-hot encoding
     y_val = to_categorical(y_val, num_classes)
