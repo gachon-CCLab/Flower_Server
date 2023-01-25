@@ -155,6 +155,8 @@ def init_gl_model():
     model.compile(optimizer='adam', loss=tf.keras.losses.sparse_categorical_crossentropy, metrics=['accuracy'])
     model.summary()
 
+
+
     return model
 
 
@@ -282,7 +284,13 @@ def evaluate_config(rnd: int):
 if __name__ == "__main__":
 
     # Cifar 10 데이터셋 불러오기
-    (X_train, y_train), (X_test, y_test) = tf.keras.datasets.cifar10.load_data()
+    # (X_train, y_train), (X_test, y_test) = tf.keras.datasets.cifar10.load_data()
+    
+    # MNIST
+    (X_train, y_train), (X_test, y_test) = tf.keras.datasets.mnist.load_data()
+
+    # Fashion_MNIST
+    # (X_train, y_train), (X_test, y_test) = tf.keras.datasets.fashion_mnist.load_data()
         
     num_classes = 10	
 
