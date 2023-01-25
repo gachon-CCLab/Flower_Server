@@ -118,28 +118,44 @@ def model_download():
 
 def init_gl_model():
     # model 생성
-    init_model = Sequential()
 
-    # Convolutional Block (Conv-Conv-Pool-Dropout)
-    init_model.add(Conv2D(32, (3, 3), activation='relu', padding='same', input_shape=(32, 32, 3)))
-    init_model.add(Conv2D(32, (3, 3), activation='relu', padding='same'))
-    init_model.add(MaxPool2D(pool_size=(2, 2)))
-    init_model.add(Dropout(0.25))
+    # Cifar-10 model
+    # model = Sequential()
 
-    # Classifying
-    init_model.add(Flatten())
-    init_model.add(Dense(512, activation='relu'))
-    init_model.add(Dropout(0.5))
-    init_model.add(Dense(10, activation='softmax'))
+    # # Convolutional Block (Conv-Conv-Pool-Dropout)
+    # model.add(Conv2D(32, (3, 3), activation='relu', padding='same', input_shape=(32, 32, 3)))
+    # model.add(Conv2D(32, (3, 3), activation='relu', padding='same'))
+    # model.add(MaxPool2D(pool_size=(2, 2)))
+    # model.add(Dropout(0.25))
 
-    METRICS = [
-        tf.keras.metrics.BinaryAccuracy(name='accuracy'),
-    ]
+    # # Classifying
+    # model.add(Flatten())
+    # model.add(Dense(512, activation='relu'))
+    # model.add(Dropout(0.5))
+    # model.add(Dense(10, activation='softmax'))
 
-    init_model.compile(loss='categorical_crossentropy', optimizer=tf.keras.optimizers.Adam(learning_rate=0.001),
-                  metrics=METRICS)
+    # METRICS = [
+    #     tf.keras.metrics.BinaryAccuracy(name='accuracy'),
+    # ]
 
-    return init_model
+    # model.compile(loss='categorical_crossentropy', optimizer=tf.keras.optimizers.Adam(learning_rate=0.001),
+    #               metrics=METRICS)
+
+    # keras.resnet50 전이학습모델 가져오기
+    model_Res = tf.keras.applications.ResNet50(weights = 'imagenet', include_top = False,input_shape = (32,32,3))
+    for layer in model_Res.layers:
+        layer.trainable = False
+    
+    # 전이학습모델에서 Flatten 후 출력 CLASS 정하기
+    x = tf.keras.layers.Flatten()(model_Res.output)
+    predictions = tf.keras.layers.Dense(10, activation = 'softmax')(x)
+
+    # 모델 학습 후 summary로 확인
+    model = tf.keras.Model(inputs = model_Res.input, outputs = predictions)
+    model.compile(optimizer='adam', loss=tf.keras.losses.sparse_categorical_crossentropy, metrics=['accuracy'])
+    model.summary()
+
+    return model
 
 
 def main(model) -> None:
