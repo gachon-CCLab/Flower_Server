@@ -18,6 +18,7 @@ import os
 import boto3
 import requests, json
 import time
+import numpy as np
 
 # TF warning log 필터링
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
@@ -288,6 +289,19 @@ if __name__ == "__main__":
     
     # MNIST
     (X_train, y_train), (X_test, y_test) = tf.keras.datasets.mnist.load_data()
+
+    # 28X28 -> 32X32
+    # Pad with 2 zeros on left and right hand sides-
+    X_train = np.pad(X_train[:,], ((0,0),(2,2),(2,2)), 'constant')
+    X_test = np.pad(X_test[:,], ((0,0),(2,2),(2,2)), 'constant')
+
+
+    # 배열의 형상을 변경해서 차원 수를 3으로 설정
+    # # 전이학습 모델 input값 설정시 차원을 3으로 설정해줘야 함
+    X_train = tf.expand_dims(X_train, axis=3, name=None)
+    X_test = tf.expand_dims(X_test, axis=3, name=None)
+    X_train = tf.repeat(X_train, 3, axis=3)
+    X_test = tf.repeat(X_test, 3, axis=3)
 
     # Fashion_MNIST
     # (X_train, y_train), (X_test, y_test) = tf.keras.datasets.fashion_mnist.load_data()
