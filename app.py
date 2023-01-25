@@ -153,11 +153,9 @@ def init_gl_model():
 
     # 모델 학습 후 summary로 확인
     model = tf.keras.Model(inputs = model_Res.input, outputs = predictions)
-    model.compile(optimizer='adam', loss=tf.keras.losses.sparse_categorical_crossentropy, metrics=['accuracy'])
-    model.summary()
-
-
-
+    model.compile(loss='categorical_crossentropy', optimizer=tf.keras.optimizers.Adam(learning_rate=0.001), metrics=['accuracy'])
+    # model.summary()
+    
     return model
 
 
@@ -290,6 +288,9 @@ if __name__ == "__main__":
     # MNIST
     (X_train, y_train), (X_test, y_test) = tf.keras.datasets.mnist.load_data()
 
+    # Fashion_MNIST
+    # (X_train, y_train), (X_test, y_test) = tf.keras.datasets.fashion_mnist.load_data()
+
     # 28X28 -> 32X32
     # Pad with 2 zeros on left and right hand sides-
     X_train = np.pad(X_train[:,], ((0,0),(2,2),(2,2)), 'constant')
@@ -302,9 +303,6 @@ if __name__ == "__main__":
     X_test = tf.expand_dims(X_test, axis=3, name=None)
     X_train = tf.repeat(X_train, 3, axis=3)
     X_test = tf.repeat(X_test, 3, axis=3)
-
-    # Fashion_MNIST
-    # (X_train, y_train), (X_test, y_test) = tf.keras.datasets.fashion_mnist.load_data()
         
     num_classes = 10	
 
