@@ -23,6 +23,8 @@ import numpy as np
 # TF warning log 필터링
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
+# GPU 사용
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 logging.basicConfig(level=logging.DEBUG, format="%(asctime)s [%(levelname)8.8s] %(message)s",
                     handlers=[logging.StreamHandler()])
@@ -155,7 +157,7 @@ def init_gl_model():
     model = tf.keras.Model(inputs = model_Res.input, outputs = predictions)
     model.compile(loss='categorical_crossentropy', optimizer=tf.keras.optimizers.Adam(learning_rate=0.001), metrics=['accuracy'])
     # model.summary()
-    
+
     return model
 
 
