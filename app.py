@@ -307,10 +307,10 @@ if __name__ == "__main__":
     # (X_train, y_train), (X_test, y_test) = tf.keras.datasets.cifar10.load_data()
     
     # MNIST
-    (X_train, y_train), (X_test, y_test) = tf.keras.datasets.mnist.load_data()
+    # (X_train, y_train), (X_test, y_test) = tf.keras.datasets.mnist.load_data()
 
     # Fashion_MNIST
-    # (X_train, y_train), (X_test, y_test) = tf.keras.datasets.fashion_mnist.load_data()
+    (X_train, y_train), (X_test, y_test) = tf.keras.datasets.fashion_mnist.load_data()
 
     # 28X28 -> 32X32
     # Pad with 2 zeros on left and right hand sides-
