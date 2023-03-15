@@ -9,9 +9,6 @@ import tensorflow as tf
 
 from keras.utils.np_utils import to_categorical
 
-from keras.models import Sequential
-from keras.layers import Conv2D, MaxPool2D, Dropout, Flatten, Dense
-
 # import wandb
 import datetime
 import os
@@ -19,6 +16,7 @@ import boto3
 import requests, json
 import time
 import numpy as np
+import init_model
 
 # TF warning log 필터링
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
@@ -119,63 +117,17 @@ def model_download():
         return model_X, gl_model_v
 
 
-def init_gl_model():
+def init_gl_model(dataset):
     # model 생성
 
-    # Cifar-10 model
-    # model = Sequential()
+    if dataset == 'cifar10':
+        model = init_model.model_cnn()
 
-    # # Convolutional Block (Conv-Conv-Pool-Dropout)
-    # model.add(Conv2D(32, (3, 3), activation='relu', padding='same', input_shape=(32, 32, 3)))
-    # model.add(Conv2D(32, (3, 3), activation='relu', padding='same'))
-    # model.add(MaxPool2D(pool_size=(2, 2)))
-    # model.add(Dropout(0.25))
-
-    # # Classifying
-    # model.add(Flatten())
-    # model.add(Dense(512, activation='relu'))
-    # model.add(Dropout(0.5))
-    # model.add(Dense(10, activation='softmax'))
-
-    # METRICS = [
-    #     tf.keras.metrics.BinaryAccuracy(name='accuracy'),
-    # ]
-
-    # model.compile(loss='categorical_crossentropy', optimizer=tf.keras.optimizers.Adam(learning_rate=0.001),
-    #               metrics=METRICS)
-
-    # keras.resnet50 전이학습모델 가져오기
-    # model_Res = tf.keras.applications.ResNet50(weights = 'imagenet', include_top = False,input_shape = (32,32,3))
-    # for layer in model_Res.layers:
-    #     layer.trainable = False
+    elif dataset == 'mnist':
+        model = init_model.model_ResNet50()
     
-    # # 전이학습모델에서 Flatten 후 출력 CLASS 정하기
-    # x = tf.keras.layers.Flatten()(model_Res.output)
-    # predictions = tf.keras.layers.Dense(10, activation = 'softmax')(x)
-
-    # # 모델 학습 후 summary로 확인
-    # model = tf.keras.Model(inputs = model_Res.input, outputs = predictions)
-    # model.compile(loss='categorical_crossentropy', optimizer=tf.keras.optimizers.Adam(learning_rate=0.001), metrics=['accuracy'])
-    # model.summary()
-
-    # keras.VGG16 전이학습모델 가져오기
-    model_VGG16 = tf.keras.applications.VGG16(weights = 'imagenet', include_top = False,input_shape = (32,32,3))
-    for layer in model_VGG16.layers:
-        layer.trainable = False
-
-    # 위의 VGG16의 구조와 동일하게 레이어를 구성
-    x = tf.keras.layers.Flatten()(model_VGG16.output)
-    x = tf.keras.layers.Dense(4096, activation='relu')(x)
-    x = tf.keras.layers.Dropout(0.2)(x)
-    x = tf.keras.layers.Dense(1000, activation='relu')(x)
-    predictions = tf.keras.layers.Dense(10, activation = 'softmax')(x)
-
-    # 옵티마이저와 손실함수를 설정하고 정확도 매트릭스가 나오게 컴파일
-    # optimizer -> 'adam'
-    # loss -> sparse_categorical_crossentropy
-    model = tf.keras.Model(inputs = model_VGG16.input, outputs = predictions)
-    model.compile(loss='categorical_crossentropy', optimizer=tf.keras.optimizers.Adam(learning_rate=0.001), metrics=['accuracy'])
-    # model.summary()
+    elif dataset == 'fashion_mnist':
+        model = init_model.model_VGG16()
 
     return model
 
@@ -189,7 +141,7 @@ def main(model) -> None:
     if not model:
 
         logging.info('init global model making')
-        init_model = init_gl_model()
+        init_model = init_gl_model(dataset)
 
         fl_server_start(init_model)
 
@@ -303,27 +255,32 @@ def evaluate_config(rnd: int):
 
 if __name__ == "__main__":
 
-    # Cifar 10 데이터셋 불러오기
-    # (X_train, y_train), (X_test, y_test) = tf.keras.datasets.cifar10.load_data()
+    dataset = 'cirfar10'
+
+    # 데이터셋 불러오기
+    if dataset == 'cifar10':
+        (X_train, y_train), (X_test, y_test) = tf.keras.datasets.cifar10.load_data()
+    elif dataset == 'mnist':
+        (X_train, y_train), (X_test, y_test) = tf.keras.datasets.mnist.load_data()
+    elif dataset == 'fashion_mnist':
+        (X_train, y_train), (X_test, y_test) = tf.keras.datasets.fashion_mnist.load_data()
+
+    if dataset == 'cifar10':
+        pass
     
-    # MNIST
-    # (X_train, y_train), (X_test, y_test) = tf.keras.datasets.mnist.load_data()
-
-    # Fashion_MNIST
-    (X_train, y_train), (X_test, y_test) = tf.keras.datasets.fashion_mnist.load_data()
-
-    # 28X28 -> 32X32
-    # Pad with 2 zeros on left and right hand sides-
-    X_train = np.pad(X_train[:,], ((0,0),(2,2),(2,2)), 'constant')
-    X_test = np.pad(X_test[:,], ((0,0),(2,2),(2,2)), 'constant')
+    else: # MNIST, FashionMNIST의 모델은 전이학습 모델이므로 3차원으로 설정
+        # 28X28 -> 32X32
+        # Pad with 2 zeros on left and right hand sides-
+        X_train = np.pad(X_train[:,], ((0,0),(2,2),(2,2)), 'constant')
+        X_test = np.pad(X_test[:,], ((0,0),(2,2),(2,2)), 'constant')
 
 
-    # 배열의 형상을 변경해서 차원 수를 3으로 설정
-    # # 전이학습 모델 input값 설정시 차원을 3으로 설정해줘야 함
-    X_train = tf.expand_dims(X_train, axis=3, name=None)
-    X_test = tf.expand_dims(X_test, axis=3, name=None)
-    X_train = tf.repeat(X_train, 3, axis=3)
-    X_test = tf.repeat(X_test, 3, axis=3)
+        # 배열의 형상을 변경해서 차원 수를 3으로 설정
+        # # 전이학습 모델 input값 설정시 차원을 3으로 설정해줘야 함
+        X_train = tf.expand_dims(X_train, axis=3, name=None)
+        X_test = tf.expand_dims(X_test, axis=3, name=None)
+        X_train = tf.repeat(X_train, 3, axis=3)
+        X_test = tf.repeat(X_test, 3, axis=3)
         
     num_classes = 10	
 
